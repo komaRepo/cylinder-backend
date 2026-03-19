@@ -19,6 +19,7 @@ import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousGetMapping;
 import me.zhengjie.utils.SpringBeanHolder;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.ApplicationPidFileWriter;
@@ -32,6 +33,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Api(hidden = true)
 @SpringBootApplication
+// @MapperScan({
+//         "me.zhengjie.modules.maint.domain.cylinder.mapper",
+//         "me.zhengjie.modules.maint.mapper",
+//         "me.zhengjie.modules.quartz.mapper",
+//         "me.zhengjie.modules.system.mapper",
+// })
+@MapperScan({"me.zhengjie.*"})
 @EnableTransactionManagement
 public class AppRun {
 

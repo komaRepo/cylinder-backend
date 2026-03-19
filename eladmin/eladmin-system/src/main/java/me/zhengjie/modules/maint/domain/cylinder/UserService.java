@@ -16,7 +16,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.entity.User;
-import me.zhengjie.modules.maint.domain.cylinder.mapper.UserMapper;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.UserEntityMapper;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,6 +27,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService extends ServiceImpl<UserMapper, User> {
+public class UserService extends ServiceImpl<UserEntityMapper, User> {
     
 }

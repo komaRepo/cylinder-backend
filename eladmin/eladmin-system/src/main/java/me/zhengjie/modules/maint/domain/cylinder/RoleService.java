@@ -16,7 +16,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Role;
-import me.zhengjie.modules.maint.domain.cylinder.mapper.RoleMapper;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.RoleEntityMapper;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,6 +27,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RoleService extends ServiceImpl<RoleMapper, Role> {
+public class RoleService extends ServiceImpl<RoleEntityMapper, Role> {
     
 }

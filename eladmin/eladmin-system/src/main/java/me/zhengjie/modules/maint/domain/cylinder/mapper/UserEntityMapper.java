@@ -21,7 +21,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.User;
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
-public interface UserMapper extends BaseMapper<User> {
+public interface UserEntityMapper extends BaseMapper<User> {
 
     
 }

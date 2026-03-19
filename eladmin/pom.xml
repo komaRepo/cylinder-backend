@@ -15,7 +15,7 @@
         <module>eladmin-generator</module>
     </modules>
 
-    <name>ELADMIN 后台管理</name>
+    <name>cylinder后台管理</name>
     <url>https://eladmin.vip</url>
 
     <parent>

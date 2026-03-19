@@ -21,7 +21,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.Role;
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
-public interface RoleMapper extends BaseMapper<Role> {
+public interface RoleEntityMapper extends BaseMapper<Role> {
 
     
 }
