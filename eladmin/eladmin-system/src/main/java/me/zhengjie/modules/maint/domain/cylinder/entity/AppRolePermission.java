@@ -7,17 +7,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@TableName("permission")
-@Schema(description = "权限表")
-public class Permission {
+@TableName("role_permission")
+@Schema(description = "角色权限关系表")
+public class AppRolePermission {
 
     @TableId(type = IdType.AUTO)
-    @Schema(description = "权限ID")
+    @Schema(description = "ID")
     private Long id;
 
-    @Schema(description = "权限代码")
-    private String code;
+    @Schema(description = "角色ID")
+    private Long roleId;
 
-    @Schema(description = "权限名称")
-    private String name;
+    @Schema(description = "权限ID")
+    private Long permissionId;
 }

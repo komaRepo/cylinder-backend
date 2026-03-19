@@ -15,8 +15,8 @@ package me.zhengjie.modules.maint.domain.cylinder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.zhengjie.modules.maint.domain.cylinder.entity.RolePermission;
-import me.zhengjie.modules.maint.domain.cylinder.mapper.RolePermissionMapper;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppRolePermission;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.AppRolePermissionMapper;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,6 +27,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RolePermissionService extends ServiceImpl<RolePermissionMapper, RolePermission> {
+public class AppRolePermissionService extends ServiceImpl<AppRolePermissionMapper, AppRolePermission> {
     
 }

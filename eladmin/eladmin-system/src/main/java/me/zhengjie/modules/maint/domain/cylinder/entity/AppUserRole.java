@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 @TableName("user_role")
 @Schema(description = "用户角色关系表")
-public class UserRole {
+public class AppUserRole {
 
     @TableId(type = IdType.AUTO)
     @Schema(description = "ID")

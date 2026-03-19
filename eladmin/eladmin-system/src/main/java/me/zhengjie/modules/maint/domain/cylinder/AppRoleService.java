@@ -15,18 +15,18 @@ package me.zhengjie.modules.maint.domain.cylinder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.zhengjie.modules.maint.domain.cylinder.entity.User;
-import me.zhengjie.modules.maint.domain.cylinder.mapper.UserEntityMapper;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppRole;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.AppRoleMapper;
 import org.springframework.stereotype.Service;
 
 /**
- * 用户服务类
+ * 角色
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService extends ServiceImpl<UserEntityMapper, User> {
+public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
     
 }

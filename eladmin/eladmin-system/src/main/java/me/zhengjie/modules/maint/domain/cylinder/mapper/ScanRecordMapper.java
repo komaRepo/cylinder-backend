@@ -14,6 +14,7 @@ package me.zhengjie.modules.maint.domain.cylinder.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import me.zhengjie.modules.maint.domain.cylinder.entity.ScanRecord;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * TODO
@@ -21,6 +22,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.ScanRecord;
  * @author koma at cylinder-backend
  * @since 2026/3/18
  */
+@Mapper
 public interface ScanRecordMapper extends BaseMapper<ScanRecord> {
     
 }

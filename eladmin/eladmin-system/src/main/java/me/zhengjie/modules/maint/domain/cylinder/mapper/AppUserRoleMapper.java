@@ -13,7 +13,8 @@
 package me.zhengjie.modules.maint.domain.cylinder.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import me.zhengjie.modules.maint.domain.cylinder.entity.RolePermission;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppUserRole;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * TODO
@@ -21,5 +22,8 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.RolePermission;
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
-public interface RolePermissionMapper extends BaseMapper<RolePermission> {
+@Mapper
+public interface AppUserRoleMapper extends BaseMapper<AppUserRole> {
+
+
 }

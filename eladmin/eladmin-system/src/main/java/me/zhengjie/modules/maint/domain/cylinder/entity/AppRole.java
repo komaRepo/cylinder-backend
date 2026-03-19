@@ -9,7 +9,7 @@ import java.util.Date;
 @Data
 @TableName("role")
 @Schema(description = "角色表")
-public class Role {
+public class AppRole {
     @TableId(type = IdType.AUTO)
     @Schema(description = "角色ID")
     private Long id;

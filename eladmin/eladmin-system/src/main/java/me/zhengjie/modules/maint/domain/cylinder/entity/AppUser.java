@@ -3,14 +3,13 @@ package me.zhengjie.modules.maint.domain.cylinder.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import me.zhengjie.modules.maint.domain.enums.UserStatus;
 
 import java.util.Date;
 
 @Data
 @TableName("user")
 @Schema(description = "用户表")
-public class User {
+public class AppUser {
     @TableId(type = IdType.AUTO)
     @Schema(description = "用户ID")
     private Long id;
