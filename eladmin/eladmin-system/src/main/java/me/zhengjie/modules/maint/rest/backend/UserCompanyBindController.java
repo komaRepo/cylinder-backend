@@ -3,7 +3,7 @@ package me.zhengjie.modules.maint.rest.backend;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.SysUserCompanyService;
-import me.zhengjie.modules.maint.sys.Result;
+import me.zhengjie.sys.ResponseResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +24,11 @@ public class UserCompanyBindController {
      */
     @PostMapping("/{targetUserId}/{targetCompanyId}")
     @PreAuthorize("@el.check('company:bind')")
-    public Result<Boolean> bindUserAndCompany(
+    public ResponseResult<Boolean> bindUserAndCompany(
             @PathVariable Long targetUserId, 
             @PathVariable Long targetCompanyId) {
             
         bindService.bind(targetUserId, targetCompanyId);
-        return Result.success(Boolean.TRUE);
+        return ResponseResult.success(Boolean.TRUE);
     }
 }

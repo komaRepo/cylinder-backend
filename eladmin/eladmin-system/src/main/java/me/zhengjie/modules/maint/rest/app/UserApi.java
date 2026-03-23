@@ -21,7 +21,7 @@ import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
 import me.zhengjie.modules.maint.domain.dto.TokenDto;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginDto;
 import me.zhengjie.modules.maint.rest.command.UserRegisterReq;
-import me.zhengjie.modules.maint.sys.Result;
+import me.zhengjie.sys.ResponseResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,9 +48,9 @@ public class UserApi {
     @PostMapping("register")
     @Valid
     @AnonymousAccess
-    public Result<Boolean> register(@RequestBody UserRegisterReq req) {
+    public ResponseResult<Boolean> register(@RequestBody UserRegisterReq req) {
         appUserService.register(req.getUsername(), req.getPassword(), req.getPhone(), req.getCompanyId());
-        return Result.success(Boolean.TRUE);
+        return ResponseResult.success(Boolean.TRUE);
     }
     
     /**
@@ -60,11 +60,11 @@ public class UserApi {
     @PostMapping("/login")
     @AnonymousAccess
     @Valid
-    public Result<Object> login(@RequestBody AppUserLoginDto dto, HttpServletRequest request) {
+    public ResponseResult<Object> login(@RequestBody AppUserLoginDto dto, HttpServletRequest request) {
         // 返回 token 和必要的用户信息
         TokenDto token = appUserService.login(dto, request);
         
-        return Result.success(token);
+        return ResponseResult.success(token);
     }
     
 }

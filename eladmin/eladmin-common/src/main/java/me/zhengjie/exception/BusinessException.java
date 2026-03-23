@@ -1,4 +1,4 @@
-package me.zhengjie.modules.maint.sys;
+package me.zhengjie.exception;
 
 import lombok.Getter;
 

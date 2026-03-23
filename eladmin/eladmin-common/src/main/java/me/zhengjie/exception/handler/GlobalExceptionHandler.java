@@ -17,8 +17,10 @@ package me.zhengjie.exception.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.BusinessException;
 import me.zhengjie.exception.EntityExistException;
 import me.zhengjie.exception.EntityNotFoundException;
+import me.zhengjie.sys.ResponseResult;
 import me.zhengjie.utils.ThrowableUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +48,15 @@ public class GlobalExceptionHandler {
         // 打印堆栈信息
         log.error(ThrowableUtil.getStackTrace(e));
         return buildResponseEntity(ApiError.error(e.getMessage()));
+    }
+    
+    /**
+     * 拦截我们自己抛出的业务异常
+     */
+    @ExceptionHandler(value = BusinessException.class)
+    public ResponseResult<?> handleBusinessException(BusinessException e) {
+        log.warn("业务异常: {}", e.getMessage());
+        return ResponseResult.error(e.getCode(), e.getMessage());
     }
 
     /**

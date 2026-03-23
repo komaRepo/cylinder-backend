@@ -1,6 +1,6 @@
 package me.zhengjie.modules.maint.util;
 
-import me.zhengjie.modules.maint.sys.BusinessException;
+import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

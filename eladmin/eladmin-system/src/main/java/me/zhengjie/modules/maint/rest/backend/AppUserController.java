@@ -21,13 +21,12 @@ import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.dto.AppUserCmd;
 import me.zhengjie.modules.maint.domain.dto.AppUserDetail;
-import me.zhengjie.modules.maint.sys.Result;
+import me.zhengjie.sys.ResponseResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
  * TODO
@@ -40,7 +39,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/user")
 @RequiredArgsConstructor
-public class UserController {
+public class AppUserController {
     
     private final AppUserService appUserService;
     
@@ -52,7 +51,7 @@ public class UserController {
     @ApiOperation("APP用户列表")
     @PostMapping("/list")
     @Valid
-    public ResponseEntity<Page<AppUserDetail>> activeList(@RequestBody AppUserCmd cmd) {
+    public ResponseResult<Page<AppUserDetail>> activeList(@RequestBody AppUserCmd cmd) {
         //todo 从token中获取当前用户属于哪个企业
         Long companyId = 123L;
         Page<AppUserDetail> details = appUserService.fetchUserList(
@@ -64,7 +63,7 @@ public class UserController {
                 cmd.getCreateTimeEnd()
         );
         
-        return ResponseEntity.ok(details);
+        return ResponseResult.success(details);
     }
     
     /**
@@ -73,12 +72,12 @@ public class UserController {
     @ApiOperation("待审核APP用户列表")
     @PostMapping("/pending-list")
     @PreAuthorize("@el.check('appUser:audit')")
-    public Result<Page<AppUser>> getPendingPage(
+    public ResponseResult<Page<AppUser>> getPendingPage(
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size) {
         // 调用分页 Service
         Page<AppUser> pageData = appUserService.getPendingPage(current, size);
-        return Result.success(pageData);
+        return ResponseResult.success(pageData);
     }
     
     /**
@@ -88,9 +87,9 @@ public class UserController {
     @ApiOperation("激活APP用户账号")
     @PostMapping("/activate/{id}")
     @PreAuthorize("@el.check('appUser:audit')")
-    public Result<Void> activateUser(@PathVariable("id") Long id) {
+    public ResponseResult<Void> activateUser(@PathVariable("id") Long id) {
         appUserService.activateUser(id);
-        return Result.success();
+        return ResponseResult.success();
     }
     
 }

@@ -1,7 +1,8 @@
-package me.zhengjie.modules.maint.sys;
+package me.zhengjie.sys;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import me.zhengjie.exception.BaseErrorInfo;
 
 /**
  * 全局业务错误码枚举

@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper;
@@ -28,11 +29,9 @@ import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import me.zhengjie.modules.maint.domain.enums.UserType;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginDto;
-import me.zhengjie.modules.maint.sys.BusinessException;
 import me.zhengjie.modules.maint.util.SecurityUtils;
 import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.modules.security.service.OnlineUserService;
-import me.zhengjie.modules.security.service.dto.AuthorityDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.domain.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -42,7 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 /**
  * 用户服务类
