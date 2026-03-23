@@ -13,6 +13,8 @@
 package me.zhengjie.modules.maint.rest.backend;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
@@ -33,6 +35,7 @@ import java.util.List;
  * @author koma at cylinder-backend
  * @since 2026/3/23
  */
+@Api(tags = "系统：APP用户管理")
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/user")
@@ -46,6 +49,7 @@ public class UserController {
      * app用户账号列表
      * @return
      */
+    @ApiOperation("APP用户列表")
     @PostMapping("/list")
     @Valid
     public ResponseEntity<Page<AppUserDetail>> activeList(@RequestBody AppUserCmd cmd) {
@@ -66,8 +70,8 @@ public class UserController {
     /**
      * 获取本企业下【待审核】的 APP 员工列表
      */
+    @ApiOperation("待审核APP用户列表")
     @PostMapping("/pending-list")
-    // 这里可以加上你框架的权限标识，比如要求必须有 user:audit 权限才能访问
     @PreAuthorize("@el.check('appUser:audit')")
     public Result<Page<AppUser>> getPendingPage(
             @RequestParam(defaultValue = "1") Integer current,
@@ -81,6 +85,7 @@ public class UserController {
      * 审核通过并激活 APP 账号
      * @param id 待激活的员工账号 ID
      */
+    @ApiOperation("激活APP用户账号")
     @PostMapping("/activate/{id}")
     @PreAuthorize("@el.check('appUser:audit')")
     public Result<Void> activateUser(@PathVariable("id") Long id) {

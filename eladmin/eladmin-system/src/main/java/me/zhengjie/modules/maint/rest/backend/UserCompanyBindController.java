@@ -1,11 +1,15 @@
 package me.zhengjie.modules.maint.rest.backend;
 
+import io.swagger.annotations.Api;
+import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.SysUserCompanyService;
 import me.zhengjie.modules.maint.sys.Result;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
+@Api(tags = "系统：用户企业绑定管理")
 @RestController
 @RequestMapping("/api/admin/bind")
 @RequiredArgsConstructor

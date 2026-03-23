@@ -3,5 +3,8 @@
 <mapper namespace="me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper">
 
 
+    <select id="fetchUserList" resultType="me.zhengjie.modules.maint.domain.dto.AppUserDetail">
+
+    </select>
 
 </mapper>

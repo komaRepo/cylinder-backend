@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.rest.app;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousAccess;
@@ -33,6 +35,7 @@ import javax.validation.Valid;
  * @author koma at cylinder-backend
  * @since 2026/3/23
  */
+@Api(tags = "APP：用户管理")
 @Slf4j
 @RestController
 @RequestMapping("/api/app/user")
@@ -41,10 +44,11 @@ public class UserApi {
     
     private final AppUserService appUserService;
     
+    @ApiOperation("APP用户注册")
     @PostMapping("register")
     @Valid
     @AnonymousAccess
-    public Result<Object> register(@RequestBody UserRegisterReq req) {
+    public Result<Boolean> register(@RequestBody UserRegisterReq req) {
         appUserService.register(req.getUsername(), req.getPassword(), req.getPhone(), req.getCompanyId());
         return Result.success(Boolean.TRUE);
     }
@@ -52,6 +56,7 @@ public class UserApi {
     /**
      * APP 端用户登录
      */
+    @ApiOperation("APP用户登录")
     @PostMapping("/login")
     @AnonymousAccess
     @Valid

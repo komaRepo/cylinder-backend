@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.rest.backend;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CompanyService;
@@ -29,6 +31,7 @@ import javax.validation.Valid;
  * @author koma at cylinder-backend
  * @since 2026/3/21
  */
+@Api(tags = "系统：企业管理")
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/company")
@@ -43,6 +46,7 @@ public class CompanyController {
      * @param cmd
      * @return
      */
+    @ApiOperation("企业注册")
     @PostMapping("register")
     @Valid
     public ResponseEntity<Object> register(@RequestBody CompanyRegisterCmd cmd) {
