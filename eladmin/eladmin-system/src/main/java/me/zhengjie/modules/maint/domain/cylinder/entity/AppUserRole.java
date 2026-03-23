@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@TableName("user_role")
+@TableName("app_user_role")
 @Schema(description = "用户角色关系表")
 public class AppUserRole {
 

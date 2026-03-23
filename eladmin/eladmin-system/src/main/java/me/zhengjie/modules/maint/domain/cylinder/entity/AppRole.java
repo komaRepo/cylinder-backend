@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("role")
+@TableName("app_role")
 @Schema(description = "角色表")
 public class AppRole {
     @TableId(type = IdType.AUTO)

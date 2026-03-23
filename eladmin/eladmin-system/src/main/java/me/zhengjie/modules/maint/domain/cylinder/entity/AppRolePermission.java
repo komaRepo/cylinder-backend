@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@TableName("role_permission")
+@TableName("app_role_permission")
 @Schema(description = "角色权限关系表")
 public class AppRolePermission {
 

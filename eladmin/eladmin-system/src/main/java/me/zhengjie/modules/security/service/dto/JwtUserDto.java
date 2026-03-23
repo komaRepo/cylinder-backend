@@ -17,9 +17,7 @@ package me.zhengjie.modules.security.service.dto;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import me.zhengjie.modules.system.domain.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.util.List;
@@ -31,6 +29,7 @@ import java.util.stream.Collectors;
  * @date 2018-11-23
  */
 @Getter
+@Builder
 @AllArgsConstructor
 public class JwtUserDto implements UserDetails {
 
@@ -42,6 +41,14 @@ public class JwtUserDto implements UserDetails {
 
     @ApiModelProperty(value = "角色")
     private final List<AuthorityDto> authorities;
+    
+    private Long userId;
+    private Long companyId;
+    private String companyPath;
+    private Integer typeFiller;
+    private Integer typeDealer;
+    private Integer typeManufacturer;
+    private Integer typeInspection;
 
     public Set<String> getRoles() {
         return authorities.stream().map(AuthorityDto::getAuthority).collect(Collectors.toSet());

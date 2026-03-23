@@ -21,6 +21,12 @@ public class Company {
     @Schema(description = "企业编号")
     private String code;
     
+    @Schema(description = "法人姓名")
+    private String legalName;
+    
+    @Schema(description = "法人身份证号")
+    private String legalCode;
+    
     @Schema(description = "是否制造商 0否 1是")
     private Integer typeManufacturer;
     
@@ -58,7 +64,7 @@ public class Company {
     private String phone;
     
     @Schema(description = "状态 0禁用 1正常")
-    private Integer status;
+    private CompanyStatus status;
     
     @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)

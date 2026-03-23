@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@TableName("permission")
+@TableName("app_permission")
 @Schema(description = "权限表")
 public class AppPermission {
 

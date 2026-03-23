@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper">
+
+    <resultMap id="BaseResultMap" type="com.yourpackage.entity.AppUser">
+        <id column="id" property="id" />
+        <result column="username" property="username" />
+        <result column="password" property="password" />
+        <result column="phone" property="phone" />
+        <result column="company_id" property="companyId" />
+        <result column="user_type" property="userType" />
+        <result column="status" property="status" />
+        <result column="activator_id" property="activatorId" />
+        <result column="last_login" property="lastLogin" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, username, password, phone, company_id, user_type, status, activator_id, last_login, create_time
+    </sql>
+
+    <select id="selectPendingUsersByCompany" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM
+        `user` WHERE
+        company_id = #{companyId}
+        AND status = 0 ORDER BY
+        create_time DESC
+    </select>
+
+    <select id="selectForLogin" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM
+        `user`
+        WHERE
+        (username = #{account} OR phone = #{account})
+        AND status != 2 LIMIT 1
+    </select>
+
+    <select id="selectUserInfoWithCompany" resultType="com.yourpackage.dto.UserInfoDTO">
+        SELECT
+            u.id AS userId,
+            u.username,
+            u.phone,
+            u.user_type AS userType,
+            u.status,
+            c.id AS companyId,
+            c.name AS companyName,
+            c.type_manufacturer AS typeManufacturer,
+            c.type_dealer AS typeDealer,
+            c.type_filler AS typeFiller,
+            c.type_inspection AS typeInspection,
+            c.path AS companyPath
+        FROM USER u
+                LEFT JOIN
+                company c ON u.company_id = c.id
+        WHERE
+            u.id = #{userId}
+    </select>
+
+</mapper>

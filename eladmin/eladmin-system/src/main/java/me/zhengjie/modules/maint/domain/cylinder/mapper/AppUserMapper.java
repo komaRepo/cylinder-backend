@@ -13,8 +13,14 @@
 package me.zhengjie.modules.maint.domain.cylinder.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
+import me.zhengjie.modules.maint.domain.dto.AppUserDetail;
+import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import org.apache.ibatis.annotations.Mapper;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.Date;
 
 /**
  * TODO
@@ -24,6 +30,13 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface AppUserMapper extends BaseMapper<AppUser> {
-
     
+    
+    Page<AppUserDetail> fetchUserList(
+            @RequestParam("companyId") Long companyId,
+            @RequestParam("username") String username,
+            @RequestParam("phone") String phone,
+            @RequestParam("status") UserStatus status,
+            @RequestParam("createTimeStart") Date createTimeStart,
+            @RequestParam("createTimeEnd") Date createTimeEnd);
 }
