@@ -29,6 +29,7 @@ import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import me.zhengjie.modules.maint.domain.enums.UserType;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginDto;
 import me.zhengjie.modules.maint.sys.BusinessException;
+import me.zhengjie.modules.maint.util.SecurityUtils;
 import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.security.service.dto.AuthorityDto;
@@ -167,6 +168,61 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         onlineUserService.save(jwtUser, token, request);
         
         return TokenDto.builder().token(token).build();
+    }
+    
+    
+    /**
+     * ================= 获取待审批列表 =================
+     */
+    public Page<AppUser> getPendingPage(Integer current, Integer size) {
+        //todo 设计sys_user与company中间表，一个账号只能对应一个企业，登录时需将companyId放入上下文中
+        //1. 获取当前管理员的企业 ID（防越权核心）
+        Long myAdminCompanyId = SecurityUtils.getCompanyId();
+        
+        // 2. 构建 MyBatis-Plus 的分页对象
+        Page<AppUser> page = new Page<>(current, size);
+        
+        // 3. 执行物理分页查询（MyBatis-Plus 会自动帮你拼装 LIMIT 语句，并自动执行 COUNT 查总数）
+        return this.baseMapper.selectPage(page, new LambdaQueryWrapper<AppUser>()
+                .eq(AppUser::getCompanyId, myAdminCompanyId)
+                .eq(AppUser::getStatus, 0)
+                .orderByDesc(AppUser::getCreateTime));
+    }
+    
+    /**
+     * ================= 激活员工账号 =================
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void activateUser(Long targetUserId) {
+        // 1. 拿当前管理员的信息
+        Long myAdminCompanyId = SecurityUtils.getCompanyId();
+        Long myAdminUserId = SecurityUtils.getUserId();
+        
+        // 2. 查询目标待激活的用户
+        AppUser targetUser = this.baseMapper.selectById(targetUserId);
+        if (targetUser == null) {
+            throw new BusinessException(404, "该用户不存在");
+        }
+        
+        // 3. 状态校验：防重复点击
+        if (ObjectUtil.notEqual(targetUser.getStatus(), UserStatus.ACTIVE)) {
+            throw new BusinessException(400, "该账号不是待激活状态，无法执行此操作");
+        }
+        
+        // 4. 【绝对核心防线：防越权漏洞】
+        // 假设前端被黑客篡改了 targetUserId，传了一个其他企业的员工 ID 过来
+        // 这里必须拦截掉，你只能激活你自己公司的员工！
+        if (!targetUser.getCompanyId().equals(myAdminCompanyId)) {
+            throw new BusinessException(403, "严重警告：您无权激活其他企业的员工账号！");
+        }
+        
+        // 5. 执行激活更新操作
+        AppUser updateObj = new AppUser();
+        updateObj.setId(targetUserId);
+        updateObj.setStatus(UserStatus.INACTIVE); // 1: 正常可用状态
+        updateObj.setActivatorId(myAdminUserId); // 留痕：记录是谁审核通过的（责任到人）
+        
+        this.baseMapper.updateById(updateObj);
     }
     
     

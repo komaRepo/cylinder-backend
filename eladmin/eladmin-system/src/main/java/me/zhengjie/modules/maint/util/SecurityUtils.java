@@ -41,4 +41,11 @@ public class SecurityUtils {
     public static String getCompanyPath() {
         return getCurrentUser().getCompanyPath();
     }
+    
+    /**
+     * 快捷获取：当前登录用户名
+     */
+    public static String getCurrentUserName() {
+        return getCurrentUser().getUsername();
+    }
 }

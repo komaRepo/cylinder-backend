@@ -16,13 +16,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.dto.AppUserCmd;
 import me.zhengjie.modules.maint.domain.dto.AppUserDetail;
+import me.zhengjie.modules.maint.sys.Result;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -46,7 +46,7 @@ public class UserController {
      * app用户账号列表
      * @return
      */
-    @PostMapping("/activeList")
+    @PostMapping("/list")
     @Valid
     public ResponseEntity<Page<AppUserDetail>> activeList(@RequestBody AppUserCmd cmd) {
         //todo 从token中获取当前用户属于哪个企业
@@ -61,6 +61,31 @@ public class UserController {
         );
         
         return ResponseEntity.ok(details);
+    }
+    
+    /**
+     * 获取本企业下【待审核】的 APP 员工列表
+     */
+    @PostMapping("/pending-list")
+    // 这里可以加上你框架的权限标识，比如要求必须有 user:audit 权限才能访问
+    @PreAuthorize("@el.check('appUser:audit')")
+    public Result<Page<AppUser>> getPendingPage(
+            @RequestParam(defaultValue = "1") Integer current,
+            @RequestParam(defaultValue = "10") Integer size) {
+        // 调用分页 Service
+        Page<AppUser> pageData = appUserService.getPendingPage(current, size);
+        return Result.success(pageData);
+    }
+    
+    /**
+     * 审核通过并激活 APP 账号
+     * @param id 待激活的员工账号 ID
+     */
+    @PostMapping("/activate/{id}")
+    @PreAuthorize("@el.check('appUser:audit')")
+    public Result<Void> activateUser(@PathVariable("id") Long id) {
+        appUserService.activateUser(id);
+        return Result.success();
     }
     
 }
