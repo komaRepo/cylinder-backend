@@ -16,6 +16,8 @@
 package me.zhengjie.utils;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import java.util.*;
 
 /**
@@ -38,6 +40,16 @@ public class PageUtil extends cn.hutool.core.util.PageUtil {
         } else {
             return list.subList(fromIndex,toIndex);
         }
+    }
+    
+    
+    public static <T, R> Page<R> convert(Page<T> source, List<R> records) {
+        Page<R> target = new Page<>();
+        target.setCurrent(source.getCurrent());
+        target.setSize(source.getSize());
+        target.setTotal(source.getTotal());
+        target.setRecords(records);
+        return target;
     }
 
     /**

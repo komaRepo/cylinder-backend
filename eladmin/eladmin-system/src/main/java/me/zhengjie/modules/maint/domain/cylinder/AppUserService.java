@@ -36,6 +36,8 @@ import me.zhengjie.modules.security.service.dto.AuthorityDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.sys.ResultCodeEnum;
+import me.zhengjie.utils.PageUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -201,18 +203,21 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
     /**
      * ================= 获取待审批列表 =================
      */
-    public Page<AppUser> getPendingPage(Integer current, Integer size) {
-        //1. 获取当前管理员的企业 ID（防越权核心）
+    public Page<AppUserDetail> getPendingPage(Integer current, Integer size) {
+        
         Long myAdminCompanyId = SecurityUtils.getCompanyId();
         
-        // 2. 构建 MyBatis-Plus 的分页对象
         Page<AppUser> page = new Page<>(current, size);
         
-        // 3. 执行物理分页查询（MyBatis-Plus 会自动帮你拼装 LIMIT 语句，并自动执行 COUNT 查总数）
-        return this.baseMapper.selectPage(page, new LambdaQueryWrapper<AppUser>()
-                .eq(AppUser::getCompanyId, myAdminCompanyId)
-                .eq(AppUser::getStatus, 0)
-                .orderByDesc(AppUser::getCreateTime));
+        Page<AppUser> result = this.baseMapper.selectPage(
+                page,
+                new LambdaQueryWrapper<AppUser>()
+                        .eq(AppUser::getCompanyId, myAdminCompanyId)
+                        .eq(AppUser::getStatus, 0)
+                        .orderByDesc(AppUser::getCreateTime)
+        );
+        
+        return PageUtil.convert(result, AppUserDetail.Converter.INSTANCE.fromEntityList(result.getRecords()));
     }
     
     /**

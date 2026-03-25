@@ -66,16 +66,16 @@ public class AppUserController {
     }
     
     /**
-     * 获取本企业下【待审核】的 APP 员工列表
+     * 获取本企业下【待激活】的 APP 员工列表
      */
-    @ApiOperation("待审核APP用户列表")
+    @ApiOperation("待激活APP用户列表")
     @PostMapping("/pending-list")
     @PreAuthorize("@el.check('appUser:audit')")
-    public ResponseResult<Page<AppUser>> getPendingPage(
+    public ResponseResult<Page<AppUserDetail>> getPendingPage(
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size) {
         // 调用分页 Service
-        Page<AppUser> pageData = appUserService.getPendingPage(current, size);
+        Page<AppUserDetail> pageData = appUserService.getPendingPage(current, size);
         return ResponseResult.success(pageData);
     }
     

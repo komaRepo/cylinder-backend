@@ -13,10 +13,14 @@
 package me.zhengjie.modules.maint.domain.dto;
 
 import lombok.Data;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import me.zhengjie.modules.maint.domain.enums.UserType;
+import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * app账号用户信息
@@ -29,8 +33,6 @@ public class AppUserDetail {
     private Long id;
     
     private String username;
-    
-    private String password;
     
     private String phone;
     
@@ -45,5 +47,16 @@ public class AppUserDetail {
     private Date lastLogin;
     
     private Date createTime;
+    
+    @Mapper
+    public interface Converter {
+        
+        Converter INSTANCE = Mappers.getMapper(Converter.class);
+        
+        AppUserDetail fromEntity(AppUser entity);
+        
+        List<AppUserDetail> fromEntityList(List<AppUser> list);
+        
+    }
     
 }
