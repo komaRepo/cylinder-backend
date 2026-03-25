@@ -12,12 +12,22 @@
  */
 package me.zhengjie.modules.maint.domain.cylinder;
 
+import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.exception.BusinessException;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppRole;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppUserRole;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.AppRoleMapper;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserRoleMapper;
+import me.zhengjie.modules.maint.domain.dto.AppUserRoleBindDto;
+import me.zhengjie.modules.maint.util.SecurityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 用户角色服务类
@@ -28,5 +38,48 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AppUserRoleService extends ServiceImpl<AppUserRoleMapper, AppUserRole> {
+    
+    
+    private final AppUserMapper appUserMapper;
+    private final AppRoleMapper appRoleMapper;
+    
+    /**
+     * ================= 为 APP 员工分配角色 =================
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void bindUserRoles(AppUserRoleBindDto dto) {
+        Long myAdminCompanyId = SecurityUtils.getCompanyId();
+        
+        // 1. 校验目标员工是否存在且属于本企业
+        AppUser targetUser = appUserMapper.selectById(dto.getUserId());
+        if (targetUser == null || !targetUser.getCompanyId().equals(myAdminCompanyId)) {
+            throw new BusinessException(403, "只能为本企业的员工分配角色");
+        }
+        
+        // 2. 校验传入的 roleIds 是否合法（防止黑客传入别的企业的顶级角色ID）
+        if (CollUtil.isNotEmpty(dto.getRoleIds())) {
+            Long validRoleCount = appRoleMapper.selectCount(new LambdaQueryWrapper<AppRole>()
+                    .in(AppRole::getId, dto.getRoleIds())
+                    .eq(AppRole::getCompanyId, myAdminCompanyId));
+            
+            if (validRoleCount != dto.getRoleIds().size()) {
+                throw new BusinessException(403, "包含非法或不属于本企业的角色，授权失败");
+            }
+        }
+        
+        // 3. 清理该员工旧的角色绑定
+        this.baseMapper.delete(new LambdaQueryWrapper<AppUserRole>()
+                .eq(AppUserRole::getUserId, dto.getUserId()));
+        
+        // 4. 插入新的角色绑定
+        if (CollUtil.isNotEmpty(dto.getRoleIds())) {
+            for (Long roleId : dto.getRoleIds()) {
+                AppUserRole aur = new AppUserRole();
+                aur.setUserId(dto.getUserId());
+                aur.setRoleId(roleId);
+                this.baseMapper.insert(aur);
+            }
+        }
+    }
     
 }

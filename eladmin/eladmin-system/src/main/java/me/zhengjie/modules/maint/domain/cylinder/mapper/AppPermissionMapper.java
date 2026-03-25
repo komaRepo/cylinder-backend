@@ -15,15 +15,21 @@ package me.zhengjie.modules.maint.domain.cylinder.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppPermission;
 import org.apache.ibatis.annotations.Mapper;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Set;
 
 /**
- * TODO
  *
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
 @Mapper
 public interface AppPermissionMapper extends BaseMapper<AppPermission> {
-
+    
+    /**
+     * 根据 APP 用户 ID，极速连表查询该用户拥有的所有权限 Code
+     */
+    Set<String> selectPermissionCodesByUserId(@Param("userId") Long userId);
     
 }

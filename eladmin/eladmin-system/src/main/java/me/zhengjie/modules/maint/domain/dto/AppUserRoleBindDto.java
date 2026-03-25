@@ -10,25 +10,22 @@
  * 代码千万行，注释第一行，编程不规范，日后泪两行
  *
  */
-package me.zhengjie.modules.maint.domain.enums;
+package me.zhengjie.modules.maint.domain.dto;
+
+import lombok.Data;
+
+import java.util.List;
 
 /**
- * 机构类型
+ *
  * @author koma at cylinder-backend
- * @since 2026/3/21
+ * @since 2026/3/25
  */
-public enum CompanyType {
-    MANUFACTURER(0,"制造商"),
-    DISTRIBUTOR(1,"分销商"),
-    RETAILER(2,"加气站"),
-    INSPECTION(3,"年检机构"),
-    ;
+@Data
+public class AppUserRoleBindDto {
+    // 要分配角色的 APP 员工 ID
+    private Long userId;
     
-    final int code;
-    final String name;
-    
-    CompanyType(int code, String name) {
-        this.code = code;
-        this.name = name;
-    }
+    // 该员工被分配的角色 ID 列表
+    private List<Long> roleIds;
 }

@@ -12,12 +12,17 @@
  */
 package me.zhengjie.modules.maint.rest.backend;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.annotation.rest.AnonymousAccess;
 import me.zhengjie.modules.maint.domain.cylinder.CompanyService;
+import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.rest.command.CompanyRegisterCmd;
+import me.zhengjie.modules.maint.rest.command.QueryCompanyListReq;
+import me.zhengjie.sys.ResponseResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 管理端企业接口
@@ -49,7 +55,8 @@ public class CompanyController {
     @ApiOperation("企业注册")
     @PostMapping("register")
     @Valid
-    public ResponseEntity<Object> register(@RequestBody CompanyRegisterCmd cmd) {
+    @AnonymousAccess
+    public ResponseResult<Boolean> register(@RequestBody CompanyRegisterCmd cmd) {
         log.info("register company: {}", cmd);
         companyService.register(cmd.getType(),
                 cmd.getName(),
@@ -67,7 +74,17 @@ public class CompanyController {
                 cmd.getDangerBusinessLicense(),
                 cmd.getCylinderFillLicense(),
                 cmd.getSpecialEquipmentLicense());
-        return ResponseEntity.ok(Boolean.TRUE);
+        return ResponseResult.success(Boolean.TRUE);
+    }
+    
+    
+    @ApiOperation("企业列表")
+    @PostMapping("companyList")
+    @Valid
+    public ResponseResult<List<Company>> companyList(@RequestBody QueryCompanyListReq req) {
+        log.info("query company list: {}", req);
+        List<Company> list = companyService.companyList(req.getName(), req.getType(), req.getStatus());
+        return ResponseResult.success(list);
     }
     
 }

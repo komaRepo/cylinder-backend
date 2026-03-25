@@ -10,25 +10,25 @@
  * 代码千万行，注释第一行，编程不规范，日后泪两行
  *
  */
-package me.zhengjie.modules.maint.domain.enums;
+package me.zhengjie.modules.maint.rest.command;
+
+import lombok.Data;
+import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
+import me.zhengjie.modules.maint.domain.enums.CompanyType;
 
 /**
- * 机构类型
+ *
  * @author koma at cylinder-backend
- * @since 2026/3/21
+ * @since 2026/3/25
  */
-public enum CompanyType {
-    MANUFACTURER(0,"制造商"),
-    DISTRIBUTOR(1,"分销商"),
-    RETAILER(2,"加气站"),
-    INSPECTION(3,"年检机构"),
-    ;
+@Data
+public class QueryCompanyListReq {
     
-    final int code;
-    final String name;
+    /** 机构名称 */
+    private String name;
+    /** 机构类型 */
+    private CompanyType type;
+    /** 机构状态 */
+    private CompanyStatus status;
     
-    CompanyType(int code, String name) {
-        this.code = code;
-        this.name = name;
-    }
 }

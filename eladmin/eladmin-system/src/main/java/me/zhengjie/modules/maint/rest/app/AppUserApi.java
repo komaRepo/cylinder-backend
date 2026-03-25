@@ -40,7 +40,7 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping("/api/app/user")
 @RequiredArgsConstructor
-public class UserApi {
+public class AppUserApi {
     
     private final AppUserService appUserService;
     
