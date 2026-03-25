@@ -12,9 +12,10 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
- * TODO
- *
+ * 企业状态
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
@@ -24,8 +25,9 @@ public enum CompanyStatus {
     SUSPENDED(2,"禁用"),
     DELETED(3,"删除");
     
-    private final int code;
-    private final String name;
+    @EnumValue
+    final int code;
+    final String name;
     
     CompanyStatus(int code, String name) {
         this.code = code;

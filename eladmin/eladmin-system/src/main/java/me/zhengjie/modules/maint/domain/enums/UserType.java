@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * 用户类型
  * @author koma at cylinder-backend
@@ -22,6 +24,7 @@ public enum UserType {
     ADMIN(2, "管理员"),
     ;
     
+    @EnumValue
     final int code;
     final String desc;
     

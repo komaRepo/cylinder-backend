@@ -17,6 +17,7 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     UNAUTHORIZED(401, "登录已过期，请重新登录"),
     FORBIDDEN(403, "抱歉，您没有相关权限"),
     PARAM_ERROR(400, "请求参数校验失败"),
+    
 
     // ========== 用户与权限业务异常 (1000段) ==========
     USER_NOT_EXIST(1001, "该用户不存在"),
@@ -24,6 +25,8 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     ACCOUNT_PENDING(1003, "您的账号正在等待企业管理员审核激活"),
     ACCOUNT_DISABLED(1004, "您的账号已被禁用，请联系管理员"),
     COMPANY_NOT_EXIST(1005, "您所选择的企业不存在或已被禁用"),
+    COMPANY_NOT_BIND(1006, "您的账号暂未绑定企业，无法执行相关操作"),
+    LEAPFROG_OPERATION(1007, "越权操作！您只能将账号绑定到【本企业】或【直接下级企业】名下"),
 
     // ========== 气瓶与流转业务异常 (2000段) ==========
     CYLINDER_NOT_FOUND(2001, "未查询到该气瓶信息"),

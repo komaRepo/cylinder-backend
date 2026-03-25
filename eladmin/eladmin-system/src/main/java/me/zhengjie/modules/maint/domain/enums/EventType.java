@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * TODO
  *
@@ -28,8 +30,9 @@ public enum EventType {
     DISCARD(4,"报废"),
     ;
     
-    private final int code;
-    private final String name;
+    @EnumValue
+    final int code;
+    final String name;
     
     EventType(int code, String name) {
         this.code = code;

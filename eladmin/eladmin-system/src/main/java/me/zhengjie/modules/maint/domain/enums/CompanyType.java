@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * 机构类型
  * @author koma at cylinder-backend
@@ -24,6 +26,7 @@ public enum CompanyType {
     INSPECTION(3,"年检机构"),
     ;
     
+    @EnumValue
     final int code;
     final String name;
     

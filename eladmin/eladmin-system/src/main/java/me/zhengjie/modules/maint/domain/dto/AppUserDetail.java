@@ -26,6 +26,8 @@ import java.util.Date;
 @Data
 public class AppUserDetail {
     
+    private Long id;
+    
     private String username;
     
     private String password;

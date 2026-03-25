@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * 气瓶状态枚举
  * @author koma at rfid-backend
@@ -25,8 +27,9 @@ public enum CylinderStatus {
     REPAIR(3,"维修"),
     SCRAP(4,"报废");
     
-    private final int code;
-    private final String name;
+    @EnumValue
+    final int code;
+    final String name;
     
     CylinderStatus(int code, String name) {
         this.code = code;

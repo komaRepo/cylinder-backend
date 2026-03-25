@@ -38,5 +38,6 @@ public interface AppUserMapper extends BaseMapper<AppUser> {
             @RequestParam("phone") String phone,
             @RequestParam("status") UserStatus status,
             @RequestParam("createTimeStart") Date createTimeStart,
-            @RequestParam("createTimeEnd") Date createTimeEnd);
+            @RequestParam("createTimeEnd") Date createTimeEnd,
+            Page<Object> page);
 }

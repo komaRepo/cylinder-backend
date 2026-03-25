@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * TODO
  *
@@ -24,8 +26,9 @@ public enum TargetType {
     PERMISSION(2,"权限"),
     ;
     
-    private final int code;
-    private final String name;
+    @EnumValue
+    final int code;
+    final String name;
     
     TargetType(int code, String name) {
         this.code = code;

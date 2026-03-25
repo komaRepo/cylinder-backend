@@ -52,15 +52,14 @@ public class AppUserController {
     @PostMapping("/list")
     @Valid
     public ResponseResult<Page<AppUserDetail>> activeList(@RequestBody AppUserCmd cmd) {
-        //todo 从token中获取当前用户属于哪个企业
-        Long companyId = 123L;
         Page<AppUserDetail> details = appUserService.fetchUserList(
-                companyId,
                 cmd.getUsername(),
                 cmd.getPhone(),
                 cmd.getStatus(),
                 cmd.getCreateTimeStart(),
-                cmd.getCreateTimeEnd()
+                cmd.getCreateTimeEnd(),
+                cmd.getPageAt(),
+                cmd.getPageSize()
         );
         
         return ResponseResult.success(details);

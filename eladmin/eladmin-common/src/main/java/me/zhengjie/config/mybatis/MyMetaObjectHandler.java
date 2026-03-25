@@ -21,6 +21,7 @@ import me.zhengjie.utils.SecurityUtils;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * @author Zheng Jie
@@ -35,6 +36,10 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
         /* 创建时间 */
         this.strictInsertFill(metaObject, "createTime", Timestamp.class, DateTime.now().toTimestamp());
         this.strictInsertFill(metaObject, "updateTime", Timestamp.class, DateTime.now().toTimestamp());
+        /* 创建时间 */
+        Date now = new Date();
+        this.strictInsertFill(metaObject, "createTime", Date.class, now);
+        this.strictInsertFill(metaObject, "updateTime", Date.class, now);
         /* 操作人 */
         String username = "System";
         try {username = SecurityUtils.getCurrentUsername();}catch (Exception ignored){}

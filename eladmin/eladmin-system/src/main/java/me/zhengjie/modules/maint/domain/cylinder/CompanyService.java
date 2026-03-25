@@ -18,12 +18,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyMapper;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.util.SecurityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,13 +44,16 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
     /**
      * 管理后台企业注册
      */
+    @Transactional(rollbackFor = Exception.class)
     public void register(CompanyType type, String name, String creditCode, String legalName,
-            String legalCode, String contactName, String contactPhone, String province,
-            String city, String district, String address, Long parentId, String businessLicense,
-            String dangerBusinessLicense, String cylinderFillLicense, String specialEquipmentLicense) {
-        //参数校验
+                         String legalCode, String contactName, String contactPhone, String province,
+                         String city, String district, String address, Long parentId, String businessLicense,
+                         String dangerBusinessLicense, String cylinderFillLicense, String specialEquipmentLicense) {
+        
+        // 1. 参数校验
         _checkParam(type, name, creditCode, legalName, legalCode, province, city, district, businessLicense, dangerBusinessLicense, cylinderFillLicense, specialEquipmentLicense);
-        //注册企业
+        
+        // 2. 注册企业基础信息
         Company company = new Company();
         company.setName(name);
         company.setCode(creditCode);
@@ -60,24 +65,46 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         company.setCity(city);
         company.setDistrict(district);
         company.setAddress(address);
-        company.setParentId(parentId);
-        company.setStatus(CompanyStatus.INACTIVE);
+        // 注意：如果前端传了 null，这里给个默认值 0，代表它是顶级节点
+        company.setParentId(parentId != null ? parentId : 0L);
+        company.setStatus(CompanyStatus.INACTIVE); // 默认待审核状态
         
+        // ==========================================
+        // 3. 【新增逻辑】根据传入的枚举，自动激活企业的资质身份
+        // ==========================================
+        if (type != null) {
+            company.setTypeManufacturer(CompanyType.MANUFACTURER.equals(type) ? 1 : 0);
+            company.setTypeDealer(CompanyType.DISTRIBUTOR.equals(type) ? 1 : 0);
+            company.setTypeFiller(CompanyType.RETAILER.equals(type) ? 1 : 0);
+            company.setTypeInspection(CompanyType.INSPECTION.equals(type) ? 1 : 0);
+        }
+        
+        // 4. 第一次落库，生成企业主键 ID
         this.baseMapper.insert(company);
         
-        //如果上层机构不为空，则查询上层机构信息
-        String path = null;
-        if (ObjectUtil.isNotEmpty(parentId)) {
+        // ==========================================
+        // 5. 【核心修复】计算层级路径 Path
+        // ==========================================
+        String path;
+        // 明确判断：只有当 parentId 存在且大于 0 时，才说明它有上级
+        if (parentId != null && parentId > 0L) {
             Company parent = this.baseMapper.selectById(parentId);
+            // 防御性编程：防止前端传了一个不存在的上级 ID
+            if (parent == null) {
+                throw new BusinessException(400, "指定的上级企业不存在，请检查数据！");
+            }
+            // 拼接路径：上级路径 + 自己的ID + 逗号
             path = parent.getPath().concat(company.getId().toString()).concat(",");
         } else {
+            // 顶级节点（parentId 为 0）：路径就是它自己
+            // 比如它的 ID 是 5，那它的 path 就是 "5,"
+            // 也有一些大厂规范喜欢加上 "0," 作为绝对根目录，即 "0,5,"，这里按你之前的逻辑保持 "5,"
             path = company.getId().toString().concat(",");
         }
         
-        //更新路径信息
+        // 6. 更新路径信息
         company.setPath(path);
         this.baseMapper.updateById(company);
-        
     }
     
     

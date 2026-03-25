@@ -35,6 +35,7 @@ import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.security.service.dto.AuthorityDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.domain.User;
+import me.zhengjie.sys.ResultCodeEnum;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,10 +66,16 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
     /**
      * 获取app用户信息
      */
-    public Page<AppUserDetail> fetchUserList(Long companyId, String username, String phone, UserStatus status,
-                                             Date createTimeStart, Date createTimeEnd) {
+    public Page<AppUserDetail> fetchUserList(String username, String phone, UserStatus status,
+                                             Date createTimeStart, Date createTimeEnd, Integer pageAt, Integer pageSize) {
+        Long companyId = SecurityUtils.getCompanyId();
+        if (companyId == null) {
+            throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
+        }
         
-        return this.baseMapper.fetchUserList(companyId, username, phone, status, createTimeStart, createTimeEnd);
+        Page<Object> page = Page.of(pageAt, pageSize);
+        
+        return this.baseMapper.fetchUserList(companyId, username, phone, status, createTimeStart, createTimeEnd, page);
     }
     
     /**
@@ -127,22 +134,22 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         // 2. 账号存在性与密码校验
         // 注意：为了防黑客猜测，账号不存在和密码错误的提示文案必须保持一致
         if (user == null || !passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new BusinessException(400, "账号或密码错误");
+            throw new BusinessException(ResultCodeEnum.PASSWORD_ERROR);
         }
         
         // 3. 【核心业务拦截】账号状态校验
         // 💡 修正了状态逻辑：INACTIVE 代表待审核，ACTIVE 代表正常，SUSPENDED 代表禁用
-        if (ObjectUtil.equals(user.getStatus(), UserStatus.INACTIVE)) {
-            throw new BusinessException(403, "您的账号正在等待企业管理员审核，暂时无法登录");
+        if (ObjectUtil.equals(user.getStatus(), UserStatus.ACTIVE)) {
+            throw new BusinessException(ResultCodeEnum.ACCOUNT_PENDING);
         }
         if (ObjectUtil.equals(user.getStatus(), UserStatus.SUSPENDED)) {
-            throw new BusinessException(403, "您的账号已被禁用，请联系管理员");
+            throw new BusinessException(ResultCodeEnum.ACCOUNT_DISABLED);
         }
         
         // 4. 查询该用户所属的企业信息（用于组装强大的 Token 载荷）
         Company company = companyMapper.selectById(user.getCompanyId());
         if (company == null || ObjectUtil.equals(company.getStatus(), CompanyStatus.SUSPENDED)) {
-            throw new BusinessException(400, "您所属的企业不存在或已被禁用");
+            throw new BusinessException(ResultCodeEnum.COMPANY_NOT_EXIST);
         }
         
         // ==========================================
@@ -184,7 +191,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         String token = tokenProvider.createToken(jwtUser);
         
         // 8. 严格的在线用户管理逻辑 (存入 Redis，支持强制踢人下线)
-        onlineUserService.save(jwtUser, token, request);
+        // onlineUserService.save(jwtUser, token, request);
         
         // 9. 按照你定义好的返回格式返回 TokenDto
         return TokenDto.builder().token(properties.getTokenStartWith().concat(token)).build();

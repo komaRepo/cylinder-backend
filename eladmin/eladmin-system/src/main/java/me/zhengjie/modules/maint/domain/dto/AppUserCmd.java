@@ -16,6 +16,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import java.util.Date;
 
 /**
@@ -38,5 +40,10 @@ public class AppUserCmd {
     /** 用户创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Date createTimeEnd;
+    
+    @Min(value = 1, message = "页码必须大于或等于1")
+    private Integer pageAt = 1;
+    @Max(value = 100, message = "每页条数必须小于或等于100")
+    private Integer pageSize = 15;
     
 }

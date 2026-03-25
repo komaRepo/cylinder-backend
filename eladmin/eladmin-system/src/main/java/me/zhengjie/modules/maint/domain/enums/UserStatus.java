@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * TODO
  *
@@ -24,8 +26,9 @@ public enum UserStatus {
     SUSPENDED(2,"禁用"),
     DELETED(3,"删除");
     
-    private final int code;
-    private final String name;
+    @EnumValue
+    final int code;
+    final String name;
     
     UserStatus(int code, String name) {
         this.code = code;

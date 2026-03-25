@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * TODO
  *
@@ -25,8 +27,9 @@ public enum FlowType {
     INSPECTION(3,"年检"),
     ;
     
-    private final int code;
-    private final String name;
+    @EnumValue
+    final int code;
+    final String name;
     
     FlowType(int code, String name) {
         this.code = code;
