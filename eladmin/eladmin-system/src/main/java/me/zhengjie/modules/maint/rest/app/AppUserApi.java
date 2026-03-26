@@ -73,7 +73,6 @@ public class AppUserApi {
      */
     @ApiOperation("APP用户修改密码")
     @PostMapping("/changePwd")
-    @AnonymousAccess
     @Valid
     public ResponseResult<Boolean> changePwd(@RequestBody AppChangePwdReq req) {
         appUserService.changePwd(req.getOldPassword(), req.getNewPassword());
