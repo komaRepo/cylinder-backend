@@ -10,24 +10,23 @@
  * 代码千万行，注释第一行，编程不规范，日后泪两行
  *
  */
-package me.zhengjie.modules.maint.domain.dto;
+package me.zhengjie.modules.maint.rest.command;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import javax.validation.constraints.NotBlank;
 
 /**
  *
  * @author koma at cylinder-backend
- * @since 2026/3/23
+ * @since 2026/3/26
  */
 @Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class TokenDto {
+public class AppChangePwdReq {
     
-    private String token;
+    @NotBlank(message = "旧密码不能为空")
+    private String oldPassword;
+    @NotBlank(message = "新密码不能为空")
+    private String newPassword;
     
 }

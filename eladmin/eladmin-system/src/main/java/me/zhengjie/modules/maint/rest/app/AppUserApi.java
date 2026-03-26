@@ -18,8 +18,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousAccess;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
-import me.zhengjie.modules.maint.domain.dto.TokenDto;
-import me.zhengjie.modules.maint.rest.command.AppUserLoginDto;
+import me.zhengjie.modules.maint.domain.dto.LoginVo;
+import me.zhengjie.modules.maint.rest.command.AppChangePwdReq;
+import me.zhengjie.modules.maint.rest.command.AppUserLoginReq;
 import me.zhengjie.modules.maint.rest.command.UserRegisterReq;
 import me.zhengjie.sys.ResponseResult;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,11 +61,24 @@ public class AppUserApi {
     @PostMapping("/login")
     @AnonymousAccess
     @Valid
-    public ResponseResult<Object> login(@RequestBody AppUserLoginDto dto, HttpServletRequest request) {
+    public ResponseResult<LoginVo> login(@RequestBody AppUserLoginReq dto, HttpServletRequest request) {
         // 返回 token 和必要的用户信息
-        TokenDto token = appUserService.login(dto, request);
+        LoginVo token = appUserService.login(dto, request);
         
         return ResponseResult.success(token);
+    }
+    
+    /**
+     * APP 端用户修改密码
+     */
+    @ApiOperation("APP用户修改密码")
+    @PostMapping("/changePwd")
+    @AnonymousAccess
+    @Valid
+    public ResponseResult<Boolean> changePwd(@RequestBody AppChangePwdReq req) {
+        appUserService.changePwd(req.getOldPassword(), req.getNewPassword());
+        
+        return ResponseResult.success(Boolean.TRUE);
     }
     
 }

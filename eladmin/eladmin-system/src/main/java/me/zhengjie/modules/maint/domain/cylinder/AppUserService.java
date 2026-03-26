@@ -23,11 +23,11 @@ import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.*;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
 import me.zhengjie.modules.maint.domain.dto.AppUserDetail;
-import me.zhengjie.modules.maint.domain.dto.TokenDto;
+import me.zhengjie.modules.maint.domain.dto.LoginVo;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import me.zhengjie.modules.maint.domain.enums.UserType;
-import me.zhengjie.modules.maint.rest.command.AppUserLoginDto;
+import me.zhengjie.modules.maint.rest.command.AppUserLoginReq;
 import me.zhengjie.modules.maint.util.SecurityUtils;
 import me.zhengjie.modules.security.config.SecurityProperties;
 import me.zhengjie.modules.security.security.TokenProvider;
@@ -37,7 +37,6 @@ import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.sys.ResultCodeEnum;
 import me.zhengjie.utils.PageUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -128,19 +127,17 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
     /**
      * app端登陆
      */
-    public TokenDto login(AppUserLoginDto dto, HttpServletRequest request) {
+    public LoginVo login(AppUserLoginReq dto, HttpServletRequest request) {
         // 1. 根据用户名查询用户
         AppUser user = this.baseMapper.selectOne(new LambdaQueryWrapper<AppUser>()
                 .eq(AppUser::getUsername, dto.getUsername()));
         
         // 2. 账号存在性与密码校验
-        // 注意：为了防黑客猜测，账号不存在和密码错误的提示文案必须保持一致
         if (user == null || !passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BusinessException(ResultCodeEnum.PASSWORD_ERROR);
         }
         
         // 3. 【核心业务拦截】账号状态校验
-        // 💡 修正了状态逻辑：INACTIVE 代表待审核，ACTIVE 代表正常，SUSPENDED 代表禁用
         if (ObjectUtil.equals(user.getStatus(), UserStatus.ACTIVE)) {
             throw new BusinessException(ResultCodeEnum.ACCOUNT_PENDING);
         }
@@ -148,7 +145,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
             throw new BusinessException(ResultCodeEnum.ACCOUNT_DISABLED);
         }
         
-        // 4. 查询该用户所属的企业信息（用于组装强大的 Token 载荷）
+        // 4. 查询该用户所属的企业信息
         Company company = companyMapper.selectById(user.getCompanyId());
         if (company == null || ObjectUtil.equals(company.getStatus(), CompanyStatus.SUSPENDED)) {
             throw new BusinessException(ResultCodeEnum.COMPANY_NOT_EXIST);
@@ -178,8 +175,8 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         
         JwtUserDto jwtUser = JwtUserDto.builder()
                                        .user(baseUser)
-                                       .dataScopes(new ArrayList<>()) // APP端暂不需要数据范围
-                                       .authorities(authorities)      // 🚀 注入真实的 APP 权限列表！
+                                       .dataScopes(new ArrayList<>())
+                                       .authorities(authorities)
                                        .userId(user.getId())
                                        .companyId(company.getId())
                                        .companyPath(company.getPath())
@@ -189,14 +186,43 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
                                        .typeInspection(company.getTypeInspection())
                                        .build();
         
-        // 7. 调用你写好的神级 TokenProvider 生成 Token
+        // 7. 生成 Token
         String token = tokenProvider.createToken(jwtUser);
+        String finalToken = properties.getTokenStartWith().concat(token);
         
-        // 8. 严格的在线用户管理逻辑 (存入 Redis，支持强制踢人下线)
+        // 8. 严格的在线用户管理逻辑 (视需求开启)
         // onlineUserService.save(jwtUser, token, request);
         
-        // 9. 按照你定义好的返回格式返回 TokenDto
-        return TokenDto.builder().token(properties.getTokenStartWith().concat(token)).build();
+        // ==========================================
+        // 9. 【全新升级】：组装并返回包含全部上下文的超级 DTO
+        // ==========================================
+        
+        // 9.1 构建用户信息
+        LoginVo.UserInfo userInfo = LoginVo.UserInfo.builder()
+                                                    .id(user.getId())
+                                                    .username(user.getUsername())
+                                                    .phone(user.getPhone())
+                                                    .userType(user.getUserType() != null ? user.getUserType() : null)
+                                                    .build();
+        
+        // 9.2 构建企业信息
+        LoginVo.CompanyInfo companyInfo = LoginVo.CompanyInfo.builder()
+                                                             .id(company.getId())
+                                                             .name(company.getName())
+                                                             .code(company.getCode())
+                                                             .typeManufacturer(company.getTypeManufacturer())
+                                                             .typeDealer(company.getTypeDealer())
+                                                             .typeFiller(company.getTypeFiller())
+                                                             .typeInspection(company.getTypeInspection())
+                                                             .build();
+        
+        // 9.3 合并返回
+        return LoginVo.builder()
+                      .token(finalToken)
+                      .permissions(permissionCodes != null ? permissionCodes : new HashSet<>())
+                      .userInfo(userInfo)
+                      .companyInfo(companyInfo)
+                      .build();
     }
     
     
@@ -322,5 +348,24 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         }
     }
     
-    
+    /**
+     * 修改密码
+     * @param oldPassword
+     * @param newPassword
+     */
+    public void changePwd(String oldPassword, String newPassword) {
+        //获取当前用户
+        Long userId = SecurityUtils.getUserId();
+        AppUser user = this.baseMapper.selectById(userId);
+        
+        //验证旧密码
+        if (user == null || !passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BusinessException(ResultCodeEnum.PASSWORD_ERROR);
+        }
+        
+        //更新新密码
+        user.setPassword(passwordEncoder.encode(newPassword));
+        
+        this.baseMapper.updateById(user);
+    }
 }
