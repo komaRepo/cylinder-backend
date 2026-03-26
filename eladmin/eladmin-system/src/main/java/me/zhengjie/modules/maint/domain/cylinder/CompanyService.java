@@ -12,15 +12,18 @@
  */
 package me.zhengjie.modules.maint.domain.cylinder;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyMapper;
+import me.zhengjie.modules.maint.domain.dto.CompanyVo;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.util.SecurityUtils;
@@ -193,4 +196,22 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 5. 执行查询并返回
         return this.baseMapper.selectList(wrapper);
     }
+    
+    /**
+     * 查询所有企业(app端注册时选择企业用)
+     * @return
+     */
+    public List<CompanyVo> listAll() {
+        QueryWrapper<Company> queryWrapper = new QueryWrapper<>();
+        queryWrapper
+                .lambda()
+                .eq(Company::getStatus, CompanyStatus.INACTIVE);
+        List<Company> companies = this.baseMapper.selectList(queryWrapper);
+        if (CollUtil.isEmpty(companies)) {
+            return null;
+        }
+        
+        return CompanyVo.Converter.INSTANCE.fromEntityList(companies);
+    }
+    
 }
