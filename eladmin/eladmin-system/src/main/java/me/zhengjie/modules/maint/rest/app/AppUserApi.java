@@ -62,10 +62,9 @@ public class AppUserApi {
     @AnonymousAccess
     @Valid
     public ResponseResult<LoginVo> login(@RequestBody AppUserLoginReq dto, HttpServletRequest request) {
-        // 返回 token 和必要的用户信息
-        LoginVo token = appUserService.login(dto, request);
+        LoginVo loginVo = appUserService.login(dto, request);
         
-        return ResponseResult.success(token);
+        return ResponseResult.success(loginVo);
     }
     
     /**
