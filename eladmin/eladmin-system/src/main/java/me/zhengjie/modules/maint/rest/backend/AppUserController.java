@@ -22,6 +22,8 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.dto.AppUserCmd;
 import me.zhengjie.modules.maint.domain.dto.AppUserDetail;
 import me.zhengjie.sys.ResponseResult;
+import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.PageUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +53,7 @@ public class AppUserController {
     @ApiOperation("APP用户列表")
     @PostMapping("/list")
     @Valid
-    public ResponseResult<Page<AppUserDetail>> activeList(@RequestBody AppUserCmd cmd) {
+    public ResponseResult<PageResult<AppUserDetail>> list(@RequestBody AppUserCmd cmd) {
         Page<AppUserDetail> details = appUserService.fetchUserList(
                 cmd.getUsername(),
                 cmd.getPhone(),
@@ -62,7 +64,7 @@ public class AppUserController {
                 cmd.getPageSize()
         );
         
-        return ResponseResult.success(details);
+        return ResponseResult.success(PageUtil.toPage(details.getRecords(), details.getTotal()));
     }
     
     /**
@@ -71,12 +73,12 @@ public class AppUserController {
     @ApiOperation("待激活APP用户列表")
     @PostMapping("/pending-list")
     @PreAuthorize("@el.check('appUser:audit')")
-    public ResponseResult<Page<AppUserDetail>> getPendingPage(
+    public ResponseResult<PageResult<AppUserDetail>> getPendingPage(
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size) {
         // 调用分页 Service
         Page<AppUserDetail> pageData = appUserService.getPendingPage(current, size);
-        return ResponseResult.success(pageData);
+        return ResponseResult.success(PageUtil.toPage(pageData.getRecords(), pageData.getTotal()));
     }
     
     /**
