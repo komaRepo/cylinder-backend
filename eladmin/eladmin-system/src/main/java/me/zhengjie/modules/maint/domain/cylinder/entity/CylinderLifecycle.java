@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import me.zhengjie.modules.maint.domain.enums.EventType;
+import me.zhengjie.modules.maint.domain.enums.LifecycleEventEnum;
 
 import java.util.Date;
 
@@ -21,7 +21,7 @@ public class CylinderLifecycle {
     private Long cylinderId;
     
     @Schema(description = "事件类型 1生产 2销售 3流转 4充气 5年检 6维修 7报废")
-    private Integer eventType;
+    private LifecycleEventEnum eventType;
     
     @Schema(description = "相关企业ID")
     private Long companyId;

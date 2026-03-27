@@ -21,10 +21,10 @@ import com.baomidou.mybatisplus.annotation.EnumValue;
  * @since 2026/3/17
  */
 public enum OperationType {
-    CREATE(0,"出库"),
-    STORAGE(1,"入库"),
+    OUT(0,"出库"),
+    IN(1,"入库"),
     INFLATE(2,"加气"),
-    INSPECTION(3,"年检"),
+    INSPECTION(3,"年检/维修"),
     ;
     
     @EnumValue

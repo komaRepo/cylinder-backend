@@ -3,6 +3,7 @@ package me.zhengjie.modules.maint.domain.cylinder.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import me.zhengjie.modules.maint.domain.enums.GasType;
 
 import java.util.Date;
 
@@ -21,7 +22,7 @@ public class CylinderFillRecord {
     private Long companyId;
     
     @Schema(description = "气体类型")
-    private String gasType;
+    private GasType gasType;
     
     @Schema(description = "充气压力")
     private Double fillPressure;

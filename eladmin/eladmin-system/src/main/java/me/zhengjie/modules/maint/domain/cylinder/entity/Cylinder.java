@@ -46,7 +46,7 @@ public class Cylinder {
     private String ownerPath;
     
     @Schema(description = "气瓶状态 0生产 1库存 2流通 3维修 4报废")
-    private Integer currentStatus;
+    private CylinderStatus currentStatus;
     
     @Schema(description = "最后流转记录ID")
     private Long lastFlowId;

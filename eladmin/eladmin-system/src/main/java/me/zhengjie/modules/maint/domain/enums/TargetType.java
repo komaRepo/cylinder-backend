@@ -24,6 +24,7 @@ public enum TargetType {
     USER(0,"用户"),
     COMPANY(1,"公司"),
     PERMISSION(2,"权限"),
+    CYLINDER(3,"气瓶"),
     ;
     
     @EnumValue

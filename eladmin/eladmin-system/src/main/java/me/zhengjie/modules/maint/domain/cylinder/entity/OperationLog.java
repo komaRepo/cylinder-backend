@@ -20,10 +20,10 @@ public class OperationLog {
     private Long userId;
     
     @Schema(description = "操作名称")
-    private String operation;
+    private OperationType operation;
     
     @Schema(description = "操作对象类型")
-    private String targetType;
+    private TargetType targetType;
     
     @Schema(description = "对象ID")
     private Long targetId;

@@ -13,6 +13,7 @@
 package me.zhengjie.modules.maint.domain.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
+import lombok.Getter;
 
 /**
  * TODO
@@ -20,21 +21,25 @@ import com.baomidou.mybatisplus.annotation.EnumValue;
  * @author koma at rfid-backend
  * @since 2026/3/17
  */
-public enum EventType {
-    PRODUCE(0,"生产"),
-    SALE(1,"销售"),
-    TRANSFER(2,"流转"),
-    INFLATE(3,"充气"),
-    INSPECTION(4,"年检"),
-    REPAIR(4,"维修"),
-    DISCARD(4,"报废"),
-    ;
+/**
+ * 生命周期事件枚举 (完美对应 CylinderLifecycle 表的 eventType)
+ */
+@Getter
+public enum LifecycleEventEnum {
+    PRODUCE(1, "生产建档"),
+    SALE(2, "销售终端"),
+    TRANSFER_OUT(3, "扫码出库"), // 细化流转动作
+    TRANSFER_IN(8, "扫码入库"),  // 细化流转动作 (新增个8，或者你统称3)
+    FILL(4, "扫码充气"),
+    INSPECT(5, "年检验收"),
+    REPAIR(6, "送修"),
+    SCRAP(7, "强制报废");
     
     @EnumValue
-    final int code;
-    final String name;
+    private final int code;
+    private final String name;
     
-    EventType(int code, String name) {
+    LifecycleEventEnum(int code, String name) {
         this.code = code;
         this.name = name;
     }
