@@ -31,8 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 
 /**
- * TODO
- *
+ * web端app账号管理
  * @author koma at cylinder-backend
  * @since 2026/3/23
  */
@@ -53,7 +52,7 @@ public class AppUserController {
     @ApiOperation("APP用户列表")
     @PostMapping("/list")
     @Valid
-    @PreAuthorize("@el.check('appUser:list')")
+    // @PreAuthorize("@el.check('appUser:list')")
     public ResponseResult<PageResult<AppUserDetail>> list(@RequestBody AppUserCmd cmd) {
         Page<AppUserDetail> details = appUserService.fetchUserList(
                 cmd.getUsername(),
@@ -73,7 +72,7 @@ public class AppUserController {
      */
     @ApiOperation("待激活APP用户列表")
     @PostMapping("/pending-list")
-    @PreAuthorize("@el.check('appUser:audit')")
+    // @PreAuthorize("@el.check('appUser:audit')")
     public ResponseResult<PageResult<AppUserDetail>> getPendingPage(
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -88,7 +87,7 @@ public class AppUserController {
      */
     @ApiOperation("激活APP用户账号")
     @PostMapping("/activate/{id}")
-    @PreAuthorize("@el.check('appUser:audit')")
+    // @PreAuthorize("@el.check('appUser:audit')")
     public ResponseResult<Void> activateUser(@PathVariable("id") Long id) {
         appUserService.activateUser(id);
         return ResponseResult.success();

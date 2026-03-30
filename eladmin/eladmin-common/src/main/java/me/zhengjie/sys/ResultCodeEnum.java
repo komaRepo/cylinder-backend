@@ -27,6 +27,7 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     COMPANY_NOT_EXIST(1005, "您所选择的企业不存在或已被禁用"),
     COMPANY_NOT_BIND(1006, "您的账号暂未绑定企业，无法执行相关操作"),
     LEAPFROG_OPERATION(1007, "越权操作！您只能将账号绑定到【本企业】或【直接下级企业】名下"),
+    ACCOUNT_STATUS_ERROR(1008, "您当前的账号为非正常状态，无法执行该操作"),
 
     // ========== 气瓶与流转业务异常 (2000段) ==========
     CYLINDER_NOT_FOUND(2001, "未查询到该气瓶信息"),

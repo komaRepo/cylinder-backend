@@ -358,6 +358,10 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         Long userId = SecurityUtils.getUserId();
         AppUser user = this.baseMapper.selectById(userId);
         
+        if (!ObjectUtil.equals(user.getStatus(), UserStatus.INACTIVE)) {
+            throw new BusinessException(ResultCodeEnum.ACCOUNT_STATUS_ERROR);
+        }
+        
         //验证旧密码
         if (user == null || !passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new BusinessException(ResultCodeEnum.PASSWORD_ERROR);
