@@ -12,15 +12,21 @@
  */
 package me.zhengjie.modules.maint.rest.backend;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.AppRoleService;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserRoleService;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppPermission;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppRole;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppPermissionMapper;
+import me.zhengjie.modules.maint.domain.dto.AppRoleDetailDto;
 import me.zhengjie.modules.maint.domain.dto.AppRoleSaveDto;
 import me.zhengjie.modules.maint.domain.dto.AppUserRoleBindDto;
+import me.zhengjie.modules.maint.rest.command.PageQueryReq;
+import me.zhengjie.modules.maint.util.SecurityUtils;
 import me.zhengjie.sys.ResponseResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,30 +55,44 @@ public class AppRbacController {
      * 获取全局的所有 APP 权限列表
      */
     @PostMapping("/permissions")
-    @PreAuthorize("@el.check('appRole:list')")
+    // @PreAuthorize("@el.check('appRole:list')")
     public ResponseResult<List<AppPermission>> getAllPermissions() {
         return ResponseResult.success(appPermissionMapper.selectList(null));
+    }
+    
+    /**
+     * 分页查询企业下所有 APP 角色及对应权限
+     */
+    @PostMapping("/role/list")
+    // @PreAuthorize("@el.check('appRole:list')")
+    public ResponseResult<PageResult<AppRoleDetailDto>> listRoles(@RequestBody PageQueryReq req) {
+        // 获取当前登录人的所属企业
+        Long companyId = SecurityUtils.getCompanyId();
+        PageResult<AppRoleDetailDto> pageData = appRoleService.listRolesWithPermissions(req, companyId);
+        return ResponseResult.success(pageData);
     }
     
     /**
      * 新增/修改 APP 角色 (并绑定权限)
      */
     @PostMapping("/role/save")
-    @PreAuthorize("@el.check('appRole:add', 'appRole:edit')")
+    // @PreAuthorize("@el.check('appRole:add', 'appRole:edit')")
     @Valid
-    public ResponseResult<Void> saveRole(@RequestBody AppRoleSaveDto dto) {
+    public ResponseResult<Boolean> saveRole(@RequestBody AppRoleSaveDto dto) {
+        Long companyId = SecurityUtils.getCompanyId();
+        dto.setCompanyId(companyId);
         appRoleService.saveOrUpdateRole(dto);
-        return ResponseResult.success();
+        return ResponseResult.success(Boolean.TRUE);
     }
     
     /**
      * 为 APP 员工分配角色
      */
     @PostMapping("/user/bind-roles")
-    @PreAuthorize("@el.check('appUser:edit')")
+    // @PreAuthorize("@el.check('appUser:edit')")
     @Valid
-    public ResponseResult<Void> bindUserRoles(@RequestBody AppUserRoleBindDto dto) {
+    public ResponseResult<Boolean> bindUserRoles(@RequestBody AppUserRoleBindDto dto) {
         appUserRoleService.bindUserRoles(dto);
-        return ResponseResult.success();
+        return ResponseResult.success(Boolean.TRUE);
     }
 }

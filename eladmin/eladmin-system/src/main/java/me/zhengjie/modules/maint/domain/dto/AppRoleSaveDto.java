@@ -32,4 +32,7 @@ public class AppRoleSaveDto {
     
     // 前端权限树勾选的权限ID列表
     private List<Long> permissionIds;
+    
+    /** 前端忽略，后端从上下文中获取 */
+    private Long companyId;
 }

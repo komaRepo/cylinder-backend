@@ -14,7 +14,9 @@ package me.zhengjie.modules.maint.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
+import me.zhengjie.modules.maint.rest.command.PageQueryReq;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -25,8 +27,9 @@ import java.util.Date;
  * @author koma at cylinder-backend
  * @since 2026/3/23
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class AppUserCmd {
+public class AppUserCmd extends PageQueryReq {
     
     /** 用户状态 */
     private UserStatus status;
@@ -40,10 +43,5 @@ public class AppUserCmd {
     /** 用户创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Date createTimeEnd;
-    
-    @Min(value = 1, message = "页码必须大于或等于1")
-    private Integer pageAt = 1;
-    @Max(value = 100, message = "每页条数必须小于或等于100")
-    private Integer pageSize = 15;
     
 }
