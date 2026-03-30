@@ -53,6 +53,7 @@ public class AppUserController {
     @ApiOperation("APP用户列表")
     @PostMapping("/list")
     @Valid
+    @PreAuthorize("@el.check('appUser:list')")
     public ResponseResult<PageResult<AppUserDetail>> list(@RequestBody AppUserCmd cmd) {
         Page<AppUserDetail> details = appUserService.fetchUserList(
                 cmd.getUsername(),

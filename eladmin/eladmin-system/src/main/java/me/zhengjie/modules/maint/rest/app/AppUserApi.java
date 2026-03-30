@@ -17,12 +17,14 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousAccess;
+import me.zhengjie.config.properties.RsaProperties;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
 import me.zhengjie.modules.maint.domain.dto.LoginVo;
 import me.zhengjie.modules.maint.rest.command.AppChangePwdReq;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginReq;
 import me.zhengjie.modules.maint.rest.command.UserRegisterReq;
 import me.zhengjie.sys.ResponseResult;
+import me.zhengjie.utils.RsaUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,6 +64,13 @@ public class AppUserApi {
     @AnonymousAccess
     @Valid
     public ResponseResult<LoginVo> login(@RequestBody AppUserLoginReq dto, HttpServletRequest request) {
+        String password = null;
+        try {
+            password = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey, dto.getPassword());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        dto.setPassword(password);
         LoginVo loginVo = appUserService.login(dto, request);
         
         return ResponseResult.success(loginVo);

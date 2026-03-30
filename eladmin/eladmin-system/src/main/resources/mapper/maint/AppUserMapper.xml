@@ -28,7 +28,7 @@
             </if>
 
             <if test="status != null">
-                AND status = #{status}
+                AND status = #{status.}
             </if>
 
             <if test="createTimeStart != null">
