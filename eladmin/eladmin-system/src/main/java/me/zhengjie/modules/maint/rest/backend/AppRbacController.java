@@ -13,6 +13,8 @@
 package me.zhengjie.modules.maint.rest.backend;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.AppPermissionService;
@@ -43,6 +45,7 @@ import java.util.List;
  * @author koma at cylinder-backend
  * @since 2026/3/25
  */
+@Api(tags = "app端用户角色权限控制")
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/app-rbac")
@@ -57,6 +60,8 @@ public class AppRbacController {
      * 新增/更新 app角色权限
      */
     @PostMapping("/permission/save")
+    @ApiOperation("新增/更新 app角色权限")
+    @Valid
     // @PreAuthorize("@el.check('appRole:edit')")
     public ResponseResult<Boolean> savePermission(@RequestBody AppPermissionSaveDto dto) {
         appPermissionService.saveOrUpdatePermission(dto);
@@ -67,6 +72,7 @@ public class AppRbacController {
      * 获取全局的所有 APP 权限列表
      */
     @PostMapping("/permissions")
+    @ApiOperation("获取全局的所有 APP 账号权限列表")
     // @PreAuthorize("@el.check('appRole:list')")
     public ResponseResult<List<AppPermission>> getAllPermissions() {
         return ResponseResult.success(appPermissionService.list(null));
@@ -76,6 +82,8 @@ public class AppRbacController {
      * 分页查询企业下所有 APP 角色及对应权限
      */
     @PostMapping("/role/list")
+    @ApiOperation("分页查询企业下所有 APP 角色及对应权限")
+    @Valid
     // @PreAuthorize("@el.check('appRole:list')")
     public ResponseResult<PageResult<AppRoleDetailDto>> listRoles(@RequestBody PageQueryReq req) {
         // 获取当前登录人的所属企业
@@ -88,6 +96,7 @@ public class AppRbacController {
      * 新增/修改 APP 角色 (并绑定权限)
      */
     @PostMapping("/role/save")
+    @ApiOperation("新增/修改 APP 角色 (并绑定权限)")
     // @PreAuthorize("@el.check('appRole:add', 'appRole:edit')")
     @Valid
     public ResponseResult<Boolean> saveRole(@RequestBody AppRoleSaveDto dto) {
@@ -101,6 +110,7 @@ public class AppRbacController {
      * 为 APP 员工分配角色
      */
     @PostMapping("/user/bind-roles")
+    @ApiOperation("为 APP 员工分配角色")
     // @PreAuthorize("@el.check('appUser:edit')")
     @Valid
     public ResponseResult<Boolean> bindUserRoles(@RequestBody AppUserRoleBindDto dto) {
