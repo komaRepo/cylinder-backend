@@ -15,11 +15,13 @@ package me.zhengjie.modules.maint.rest.backend;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.modules.maint.domain.cylinder.AppPermissionService;
 import me.zhengjie.modules.maint.domain.cylinder.AppRoleService;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserRoleService;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppPermission;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppRole;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppPermissionMapper;
+import me.zhengjie.modules.maint.domain.dto.AppPermissionSaveDto;
 import me.zhengjie.modules.maint.domain.dto.AppRoleDetailDto;
 import me.zhengjie.modules.maint.domain.dto.AppRoleSaveDto;
 import me.zhengjie.modules.maint.domain.dto.AppUserRoleBindDto;
@@ -49,7 +51,17 @@ public class AppRbacController {
     
     private final AppRoleService appRoleService;
     private final AppUserRoleService appUserRoleService;
-    private final AppPermissionMapper appPermissionMapper;
+    private final AppPermissionService appPermissionService;
+    
+    /**
+     * 新增/更新 app角色权限
+     */
+    @PostMapping("/permission/save")
+    // @PreAuthorize("@el.check('appRole:edit')")
+    public ResponseResult<Boolean> savePermission(@RequestBody AppPermissionSaveDto dto) {
+        appPermissionService.saveOrUpdatePermission(dto);
+        return ResponseResult.success(Boolean.TRUE);
+    }
     
     /**
      * 获取全局的所有 APP 权限列表
@@ -57,7 +69,7 @@ public class AppRbacController {
     @PostMapping("/permissions")
     // @PreAuthorize("@el.check('appRole:list')")
     public ResponseResult<List<AppPermission>> getAllPermissions() {
-        return ResponseResult.success(appPermissionMapper.selectList(null));
+        return ResponseResult.success(appPermissionService.list(null));
     }
     
     /**
