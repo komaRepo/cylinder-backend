@@ -12,7 +12,9 @@
  */
 package me.zhengjie.modules.maint.domain.cylinder;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
 import me.zhengjie.modules.maint.domain.dto.CylinderFillDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderFlowDto;
 import me.zhengjie.modules.maint.domain.enums.*;
+import me.zhengjie.modules.maint.util.RfidParserUtil;
 import me.zhengjie.modules.maint.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +33,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 气瓶服务类
@@ -46,6 +50,163 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     private final CylinderFlowMapper cylinderFlowMapper;
     private final CompanyMapper companyMapper;
     private final CylinderFillRecordMapper cylinderFillRecordMapper;
+    private final CylinderBatchMapper cylinderBatchMapper;
+    private final CylinderLifecycleService cylinderLifecycleService;
+    private final OperationLogMapper operationLogMapper;
+    
+    
+    /**
+     * Excel批量导入
+     * @param rawDataList
+     * @return
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int batchImportProduce(List<String> rawDataList) {
+        Long myUserId = SecurityUtils.getUserId();
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        String myCompanyPath = SecurityUtils.getCompanyPath();
+        
+        // 1. 获取当前企业信息，用于校验监管码
+        Company myCompany = companyMapper.selectById(myCompanyId);
+        if (myCompany.getTypeManufacturer() != 1) {
+            throw new BusinessException(403, "非法操作：只有制造商才能批量导入出厂气瓶！");
+        }
+        String myMfgCode = myCompany.getCode(); // 【核心】使用企业表中的监管码
+        if (StrUtil.isBlank(myMfgCode)) {
+            throw new BusinessException(400, "企业信息不完善：未配置监管分配的制造单位代码！");
+        }
+        
+        // ==========================================
+        // 2. 内存解析与校验 (O(N) 复杂度)
+        // ==========================================
+        List<RfidParserUtil.RfidLabel> parsedLabels = new ArrayList<>();
+        Set<String> uniqueQrcodes = new HashSet<>(); // 用于当前批次内防重
+        
+        for (String rawData : rawDataList) {
+            // 解析出超级聚合对象
+            RfidParserUtil.RfidLabel label = RfidParserUtil.parse(rawData);
+            
+            // 极限风控 1：比对监管码，防止混入其他厂家的标签
+            if (!myMfgCode.equals(label.getUniqueInfo().getMfgCode())) {
+                throw new BusinessException(400, "发现异常数据！标签内的制造单位代码 ["
+                        + label.getUniqueInfo().getMfgCode() + "] 与本企业不符！");
+            }
+            
+            // 极限风控 2：Excel 内部数据去重防呆
+            String qrcode = label.getUniqueInfo().getFullCode();
+            if (uniqueQrcodes.contains(qrcode)) {
+                continue; // 如果 Excel 里有重复的行，直接跳过
+            }
+            uniqueQrcodes.add(qrcode);
+            parsedLabels.add(label);
+        }
+        
+        // ==========================================
+        // 3. 数据库级别防撞码 (极其关键)
+        // ==========================================
+        // 使用 IN 语句一次性查出数据库中已经存在的二维码
+        List<Cylinder> existCylinders = this.baseMapper.selectList(new LambdaQueryWrapper<Cylinder>()
+                .in(Cylinder::getQrcode, uniqueQrcodes)
+                .select(Cylinder::getQrcode)); // 优化性能，只查 code
+        
+        if (CollUtil.isNotEmpty(existCylinders)) {
+            String duplicateCodes = existCylinders.stream().map(Cylinder::getQrcode).collect(Collectors.joining(","));
+            // 实际业务中可能只需要记录错误日志并跳过，这里为了严谨直接抛异常打断
+            throw new BusinessException(400, "导入失败！发现系统已存在的重复标签: " + duplicateCodes);
+        }
+        
+        // ==========================================
+        // 4. 动态处理生产批次 (CylinderBatch)
+        // ==========================================
+        // 按照批次号(batchNo)和生产日期进行分组
+        Map<String, List<RfidParserUtil.RfidLabel>> batchGroup = parsedLabels.stream()
+                                                                             .collect(Collectors.groupingBy(label -> label.getMfgExtInfo().getBatchNo()));
+        
+        // 建立 批次号 -> 数据库BatchID 的映射字典
+        Map<String, Long> batchIdMap = new HashMap<>();
+        
+        for (Map.Entry<String, List<RfidParserUtil.RfidLabel>> entry : batchGroup.entrySet()) {
+            String batchNo = entry.getKey();
+            List<RfidParserUtil.RfidLabel> labelsInBatch = entry.getValue();
+            // 取该批次第 1 个标签的生产日期作为批次日期
+            Date produceDate = labelsInBatch.get(0).getMfgExtInfo().getProduceDate();
+            
+            // 查一下数据库里有没有建过这个批次
+            CylinderBatch existBatch = cylinderBatchMapper.selectOne(new LambdaQueryWrapper<CylinderBatch>()
+                    .eq(CylinderBatch::getManufacturerId, myCompanyId)
+                    .eq(CylinderBatch::getBatchNo, batchNo));
+            
+            if (existBatch != null) {
+                batchIdMap.put(batchNo, existBatch.getId());
+                // 可选：更新该批次的生产总数
+                existBatch.setQuantity(existBatch.getQuantity() + labelsInBatch.size());
+                cylinderBatchMapper.updateById(existBatch);
+            } else {
+                // 如果是新批次，自动创建！
+                CylinderBatch newBatch = new CylinderBatch();
+                newBatch.setManufacturerId(myCompanyId);
+                newBatch.setBatchNo(batchNo);
+                newBatch.setProduceDate(produceDate);
+                newBatch.setQuantity(labelsInBatch.size());
+                cylinderBatchMapper.insert(newBatch);
+                batchIdMap.put(batchNo, newBatch.getId()); // 拿到刚刚自增的主键 ID
+            }
+        }
+        
+        // ==========================================
+        // 5. 组装实体，准备高性能批量插入！
+        // ==========================================
+        Date now = new Date();
+        List<Cylinder> insertCylinders = new ArrayList<>();
+        List<CylinderLifecycle> insertLifecycles = new ArrayList<>();
+        
+        for (RfidParserUtil.RfidLabel label : parsedLabels) {
+            // 组装气瓶主表
+            Cylinder cylinder = new Cylinder();
+            cylinder.setCode(label.getUniqueInfo().getFullCode());
+            cylinder.setQrcode(label.getUniqueInfo().getFullCode());
+            cylinder.setSpec(label.getMfgExtInfo().getModelCode());
+            cylinder.setVolume(label.getMfgExtInfo().getVolume().doubleValue());
+            // 注意：重量(皮重)在 RFID 里没体现，可能需要后续补充，或者让前端多传一个统一个皮重参数
+            cylinder.setManufactureDate(label.getMfgExtInfo().getProduceDate());
+            cylinder.setNextInspectionDate(label.getMfgExtInfo().getNextInspectDate());
+            
+            cylinder.setManufacturerId(myCompanyId);
+            // 匹配刚才处理好的 BatchID
+            cylinder.setBatchId(batchIdMap.get(label.getMfgExtInfo().getBatchNo()));
+            cylinder.setCurrentCompanyId(myCompanyId);
+            cylinder.setOwnerPath(myCompanyPath);
+            cylinder.setCurrentStatus(CylinderStatus.IN_STOCK); // 枚举：1 在库
+            
+            insertCylinders.add(cylinder);
+        }
+        
+        // MyBatis-Plus 神级方法：分批次插入，每批 1000 条，保护数据库连接
+        this.saveBatch(insertCylinders, 1000);
+        
+        // ==========================================
+        // 6. 批量生成生命周期轨迹与操作日志
+        // ==========================================
+        for (Cylinder savedCylinder : insertCylinders) {
+            CylinderLifecycle lifecycle = new CylinderLifecycle();
+            lifecycle.setCylinderId(savedCylinder.getId());
+            lifecycle.setEventType(LifecycleEventEnum.PRODUCE);
+            lifecycle.setCompanyId(myCompanyId);
+            lifecycle.setOperatorId(myUserId);
+            lifecycle.setEventTime(now);
+            lifecycle.setRemark("Excel 批量扫码建档入库");
+            insertLifecycles.add(lifecycle);
+        }
+        
+        // 批量保存生命周期表（如果有对应的 Service，请用 Service 的 saveBatch）
+        cylinderLifecycleService.saveBatch(insertLifecycles, 1000);
+        
+        // 统一记录一次批量操作日志即可，无需每条气瓶记一次日志
+        recordOperationLog(OperationType.PRODUCE, TargetType.CYLINDER, (long) parsedLabels.size());
+        
+        return parsedLabels.size();
+    }
+    
     
     /**
      * ================= 扫码出库 (发货) =================

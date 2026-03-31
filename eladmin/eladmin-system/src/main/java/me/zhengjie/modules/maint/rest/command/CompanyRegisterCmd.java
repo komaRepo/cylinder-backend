@@ -35,6 +35,9 @@ public class CompanyRegisterCmd {
     @NotBlank(message = "统一社会信用代码不能为空")
     private String creditCode;
     
+    /** 监管部门分配代码 */
+    private String code;
+    
     @NotBlank(message = "法人姓名不能为空")
     private String legalName;
     

@@ -25,6 +25,7 @@ public enum OperationType {
     IN(1,"入库"),
     INFLATE(2,"加气"),
     INSPECTION(3,"年检/维修"),
+    PRODUCE(4,"生产入库"),
     ;
     
     @EnumValue

@@ -18,6 +18,9 @@ public class Company {
     @Schema(description = "企业名称")
     private String name;
     
+    @Schema(description = "统一社会信用代码")
+    private String creditCode;
+    
     @Schema(description = "企业编号")
     private String code;
     

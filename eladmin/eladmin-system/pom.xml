@@ -85,6 +85,12 @@
             <version>1.5.5.Final</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>4.0.3</version>
+        </dependency>
+
     </dependencies>
 
     <!-- 打包 -->

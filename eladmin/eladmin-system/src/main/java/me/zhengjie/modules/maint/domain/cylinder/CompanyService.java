@@ -48,7 +48,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
      * 管理后台企业注册
      */
     @Transactional(rollbackFor = Exception.class)
-    public void register(CompanyType type, String name, String creditCode, String legalName,
+    public void register(CompanyType type, String name, String creditCode, String code, String legalName,
                          String legalCode, String contactName, String contactPhone, String province,
                          String city, String district, String address, Long parentId, String businessLicense,
                          String dangerBusinessLicense, String cylinderFillLicense, String specialEquipmentLicense) {
@@ -59,7 +59,8 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 2. 注册企业基础信息
         Company company = new Company();
         company.setName(name);
-        company.setCode(creditCode);
+        company.setCode(code);
+        company.setCreditCode(creditCode);
         company.setLegalName(legalName);
         company.setLegalCode(legalCode);
         company.setContact(contactName);

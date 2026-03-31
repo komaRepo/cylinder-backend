@@ -1,0 +1,80 @@
+/*
+ * Copyright 2026 The cylinder-backend Project under the WTFPL License,
+ *
+ *     http://www.wtfpl.net/about/
+ *
+ * Everyone is permitted to copy and distribute verbatim or modified
+ * copies of this license document, and changing it is allowed as long
+ * as the name is changed.
+ *
+ * 代码千万行，注释第一行，编程不规范，日后泪两行
+ *
+ */
+package me.zhengjie.modules.maint.rest.backend;
+
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.excel.EasyExcel;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
+import me.zhengjie.modules.maint.domain.dto.CylinderExcelDto;
+import me.zhengjie.sys.ResponseResult;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * web端气瓶相关接口
+ * @author koma at cylinder-backend
+ * @since 2026/3/31
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/admin/cylinder")
+@RequiredArgsConstructor
+@Api(tags = "系统：气瓶相关接口")
+public class CylinderController {
+    
+    private final CylinderService cylinderService;
+    
+    /**
+     * 制造商：批量导入气瓶 RFID 标签
+     */
+    @PostMapping("/import")
+    // @PreAuthorize("@el.check('app:cylinder:produce')")
+    public ResponseResult<String> importCylinders(@RequestParam("file") MultipartFile file) {
+        try {
+            // 使用 EasyExcel 同步读取所有数据到内存 (1万条数据约几兆，内存完全无压力)
+            List<CylinderExcelDto> excelList = EasyExcel.read(file.getInputStream())
+                                                        .head(CylinderExcelDto.class)
+                                                        .sheet()
+                                                        .doReadSync();
+            
+            if (CollUtil.isEmpty(excelList)) {
+                return ResponseResult.error("导入的 Excel 为空");
+            }
+            
+            // 提取出纯字符串列表，交给 Service 处理
+            List<String> rawDataList = excelList.stream()
+                                                .map(CylinderExcelDto::getRfidRawData)
+                                                .filter(StrUtil::isNotBlank) // 过滤掉空行
+                                                .collect(Collectors.toList());
+            
+            // 调用核心业务逻辑，返回成功导入的数量
+            int successCount = cylinderService.batchImportProduce(rawDataList);
+            return ResponseResult.success("成功批量建档导入气瓶: " + successCount + " 只");
+            
+        } catch (Exception e) {
+            return ResponseResult.error("导入失败: " + e.getMessage());
+        }
+    }
+    
+}

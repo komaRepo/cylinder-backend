@@ -61,6 +61,7 @@ public class CompanyController {
         companyService.register(cmd.getType(),
                 cmd.getName(),
                 cmd.getCreditCode(),
+                cmd.getCode(),
                 cmd.getLegalName(),
                 cmd.getLegalCode(),
                 cmd.getContactName(),
