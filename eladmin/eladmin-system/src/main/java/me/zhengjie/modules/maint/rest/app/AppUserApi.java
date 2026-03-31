@@ -17,14 +17,19 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousAccess;
+import me.zhengjie.annotation.rest.AnonymousDeleteMapping;
 import me.zhengjie.config.properties.RsaProperties;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
 import me.zhengjie.modules.maint.domain.dto.LoginVo;
-import me.zhengjie.modules.maint.rest.command.AppChangePwdReq;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginReq;
 import me.zhengjie.modules.maint.rest.command.UserRegisterReq;
+import me.zhengjie.modules.security.security.TokenProvider;
+import me.zhengjie.modules.security.service.OnlineUserService;
+import me.zhengjie.modules.system.domain.dto.UserPassVo;
 import me.zhengjie.sys.ResponseResult;
 import me.zhengjie.utils.RsaUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,12 +51,21 @@ import javax.validation.Valid;
 public class AppUserApi {
     
     private final AppUserService appUserService;
+    private final TokenProvider tokenProvider;
+    private final OnlineUserService onlineUserService;
     
     @ApiOperation("APP用户注册")
     @PostMapping("register")
     @Valid
     @AnonymousAccess
     public ResponseResult<Boolean> register(@RequestBody UserRegisterReq req) {
+        String password = null;
+        try {
+            password = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey,req.getPassword());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        req.setPassword(password);
         appUserService.register(req.getUsername(), req.getPassword(), req.getPhone(), req.getCompanyId());
         return ResponseResult.success(Boolean.TRUE);
     }
@@ -82,10 +96,21 @@ public class AppUserApi {
     @ApiOperation("APP用户修改密码")
     @PostMapping("/changePwd")
     @Valid
-    public ResponseResult<Boolean> changePwd(@RequestBody AppChangePwdReq req) {
-        appUserService.changePwd(req.getOldPassword(), req.getNewPassword());
+    public ResponseResult<Boolean> changePwd(@RequestBody UserPassVo req) throws Exception {
+        String oldPass = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey,req.getOldPass());
+        String newPass = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey,req.getNewPass());
+        appUserService.changePwd(oldPass, newPass);
         
         return ResponseResult.success(Boolean.TRUE);
+    }
+    
+    
+    @ApiOperation("退出登录")
+    @AnonymousDeleteMapping(value = "/logout")
+    public ResponseEntity<Object> logout(HttpServletRequest request) {
+        String token = tokenProvider.getToken(request);
+        onlineUserService.logout(token);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
     
 }

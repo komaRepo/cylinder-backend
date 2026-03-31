@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.*;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
@@ -191,7 +192,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         String finalToken = properties.getTokenStartWith().concat(token);
         
         // 8. 严格的在线用户管理逻辑 (视需求开启)
-        // onlineUserService.save(jwtUser, token, request);
+        onlineUserService.save(jwtUser, token, request);
         
         // ==========================================
         // 9. 【全新升级】：组装并返回包含全部上下文的超级 DTO
@@ -363,8 +364,12 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         }
         
         //验证旧密码
-        if (user == null || !passwordEncoder.matches(oldPassword, user.getPassword())) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new BusinessException(ResultCodeEnum.PASSWORD_ERROR);
+        }
+        
+        if(passwordEncoder.matches(newPassword, oldPassword)){
+            throw new BusinessException(ResultCodeEnum.PASSWORD_VERIFY_ERROR);
         }
         
         //更新新密码

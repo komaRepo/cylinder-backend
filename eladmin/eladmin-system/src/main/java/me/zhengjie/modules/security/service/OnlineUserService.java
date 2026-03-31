@@ -15,6 +15,7 @@
  */
 package me.zhengjie.modules.security.service;
 
+import cn.hutool.core.util.ObjectUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.security.TokenProvider;
@@ -51,7 +52,7 @@ public class OnlineUserService {
      * @param request /
      */
     public void save(JwtUserDto jwtUserDto, String token, HttpServletRequest request){
-        String dept = jwtUserDto.getUser().getDept().getName();
+        String dept = ObjectUtil.isEmpty(jwtUserDto.getUser().getDept()) ? null : jwtUserDto.getUser().getDept().getName();
         String ip = StringUtils.getIp(request);
         String id = tokenProvider.getId(token);
         String browser = StringUtils.getBrowser(request);
