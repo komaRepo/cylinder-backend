@@ -21,14 +21,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
 import me.zhengjie.modules.maint.domain.dto.CylinderExcelDto;
+import me.zhengjie.modules.maint.domain.dto.CylinderPageDto;
+import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
 import me.zhengjie.sys.ResponseResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -77,6 +78,19 @@ public class CylinderController {
         } catch (Exception e) {
             return ResponseResult.error("导入失败: " + e.getMessage());
         }
+    }
+    
+    
+    /**
+     * 管理端：分页查询气瓶大盘数据
+     */
+    @ApiOperation("管理端：分页查询气瓶数据")
+    @PostMapping("/page")
+    // @PreAuthorize("@el.check('cylinder:list')")
+    @Valid
+    public ResponseResult<PageResult<CylinderPageDto>> pageQuery(@RequestBody CylinderQueryReq req) {
+        PageResult<CylinderPageDto> pageData = cylinderService.queryCylinderPage(req);
+        return ResponseResult.success(pageData);
     }
     
 }

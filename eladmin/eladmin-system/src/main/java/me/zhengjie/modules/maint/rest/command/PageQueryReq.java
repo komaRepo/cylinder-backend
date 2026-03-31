@@ -12,6 +12,7 @@
  */
 package me.zhengjie.modules.maint.rest.command;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.Max;
@@ -25,8 +26,11 @@ import javax.validation.constraints.Min;
 @Data
 public class PageQueryReq {
     
+    @Schema(description = "页码", example = "1")
     @Min(value = 1, message = "页码必须大于或等于1")
     private Integer page = 1;
+    
+    @Schema(description = "每页条数", example = "15")
     @Max(value = 100, message = "每页条数必须小于或等于100")
     private Integer size = 15;
     

@@ -16,6 +16,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +25,13 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.*;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
 import me.zhengjie.modules.maint.domain.dto.CylinderFillDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderFlowDto;
+import me.zhengjie.modules.maint.domain.dto.CylinderPageDto;
 import me.zhengjie.modules.maint.domain.enums.*;
+import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
 import me.zhengjie.modules.maint.util.RfidParserUtil;
 import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.utils.PageResult;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -475,5 +480,117 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // createTime 由 @TableField(fill = FieldFill.INSERT) 自动处理
         operationLogMapper.insert(log);
     }
+    
+    
+    /**
+     * 管理端查询气瓶数据
+     * @param req
+     * @return
+     */
+    public PageResult<CylinderPageDto> queryCylinderPage(CylinderQueryReq req) {
+        // ==========================================
+        // 1. 【核心：数据权限隔离】
+        // ==========================================
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        Boolean isAdmin = SecurityUtils.getCurrentUser().getUser().getIsAdmin();
+        Company company = companyMapper.selectById(myCompanyId);
+        boolean isManufacturer = ObjectUtil.equals(company.getTypeManufacturer(), 1);// 是否制造商
+        
+        LambdaQueryWrapper<Cylinder> wrapper = new LambdaQueryWrapper<>();
+        
+        // 如果不是制造商管理员，必须把查询范围死死锁在【本企业】及其下属机构
+        if (!isAdmin || !isManufacturer) {
+            // 这里有两种策略，最严谨的是：当前在我手里的，或者 ownerPath 包含我企业的
+            wrapper.and(w -> w.eq(Cylinder::getCurrentCompanyId, myCompanyId)
+                              .or()
+                              .like(Cylinder::getOwnerPath, "," + myCompanyId + ","));
+        } else {
+            // 超级管理员可以通过前端下拉框筛选指定企业
+            if (req.getCurrentCompanyId() != null) {
+                wrapper.eq(Cylinder::getCurrentCompanyId, req.getCurrentCompanyId());
+            }
+        }
+        
+        // ==========================================
+        // 2. 动态拼装复合查询条件
+        // ==========================================
+        // 二维码精确匹配 (由于是主键性质，建议 eq 而不是 like，效率极高)
+        if (StrUtil.isNotBlank(req.getCode())) {
+            wrapper.eq(Cylinder::getCode, req.getCode().trim());
+        }
+        // 规格查询
+        if (StrUtil.isNotBlank(req.getSpec())) {
+            wrapper.eq(Cylinder::getSpec, req.getSpec());
+        }
+        // 状态精准查询
+        if (req.getCurrentStatus() != null) {
+            wrapper.eq(Cylinder::getCurrentStatus, req.getCurrentStatus());
+        }
+        // 制造商筛选
+        if (req.getManufacturerId() != null) {
+            wrapper.eq(Cylinder::getManufacturerId, req.getManufacturerId());
+        }
+        // 🚨 超期预警区间查询 (重点：特检局最爱看的数据！)
+        if (req.getNextInspectDateStart() != null) {
+            wrapper.ge(Cylinder::getNextInspectionDate, req.getNextInspectDateStart());
+        }
+        if (req.getNextInspectDateEnd() != null) {
+            wrapper.le(Cylinder::getNextInspectionDate, req.getNextInspectDateEnd());
+        }
+        
+        // 默认按创建时间倒序排
+        wrapper.orderByDesc(Cylinder::getCreateTime);
+        
+        // ==========================================
+        // 3. 执行纯粹的物理分页查询
+        // ==========================================
+        Page<Cylinder> page = new Page<>(req.getPage(), req.getSize());
+        this.baseMapper.selectPage(page, wrapper);
+        
+        List<Cylinder> records = page.getRecords();
+        if (CollUtil.isEmpty(records)) {
+            return new PageResult<>(new ArrayList<>(), page.getTotal());
+        }
+        
+        // ==========================================
+        // 4. 【高阶技巧：内存中批量翻译企业名称，拒绝 N+1】
+        // ==========================================
+        // 提取当前页所有涉及到的 企业ID (包括 currentCompanyId 和 manufacturerId)
+        Set<Long> companyIds = new HashSet<>();
+        records.forEach(c -> {
+            if (c.getCurrentCompanyId() != null) companyIds.add(c.getCurrentCompanyId());
+            if (c.getManufacturerId() != null) companyIds.add(c.getManufacturerId());
+        });
+        
+        // IN 查询一次性把本页涉及到的企业全部查出来，转为 Map
+        Map<Long, String> companyNameMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(companyIds)) {
+            List<Company> companies = companyMapper.selectList(
+                    new LambdaQueryWrapper<Company>()
+                            .in(Company::getId, companyIds)
+                            .select(Company::getId, Company::getName) // 性能优化：只查 ID 和 Name
+            );
+            companyNameMap = companies.stream()
+                                      .collect(Collectors.toMap(Company::getId, Company::getName));
+        }
+        
+        // ==========================================
+        // 5. 组装最终 DTO 列表
+        // ==========================================
+        Map<Long, String> finalCompanyNameMap = companyNameMap;
+        List<CylinderPageDto> dtoList = records.stream().map(cylinder -> {
+            CylinderPageDto dto = new CylinderPageDto();
+            BeanUtils.copyProperties(cylinder, dto);
+            
+            // 从 Map 中极速回显名称
+            dto.setCurrentCompanyName(finalCompanyNameMap.get(cylinder.getCurrentCompanyId()));
+            dto.setManufacturerName(finalCompanyNameMap.get(cylinder.getManufacturerId()));
+            
+            return dto;
+        }).collect(Collectors.toList());
+        
+        return new PageResult<>(dtoList, page.getTotal());
+    }
+    
     
 }

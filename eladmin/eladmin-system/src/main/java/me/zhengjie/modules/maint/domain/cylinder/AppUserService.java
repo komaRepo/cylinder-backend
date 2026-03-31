@@ -15,6 +15,7 @@ package me.zhengjie.modules.maint.domain.cylinder;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -377,4 +378,20 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         
         this.baseMapper.updateById(user);
     }
+    
+    
+    /**
+     * 查询用户信息
+     * @param userId
+     * @return
+     */
+    public AppUser fetchById(Long userId) {
+        QueryWrapper<AppUser> queryWrapper = new QueryWrapper<>();
+        queryWrapper
+                .lambda()
+                .eq(AppUser::getId, userId);
+        
+        return this.baseMapper.selectOne(queryWrapper);
+    }
+    
 }

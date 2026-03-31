@@ -12,9 +12,10 @@
  */
 package me.zhengjie.modules.maint.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
- * TODO
- *
+ * 气瓶种类枚举
  * @author koma at cylinder-backend
  * @since 2026/3/31
  */
@@ -23,6 +24,7 @@ public enum CylinderType {
     COMPOSITE(1,"复合瓶"),
     ;
     
+    @EnumValue
     final int code;
     final String name;
     
