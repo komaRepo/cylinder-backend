@@ -26,8 +26,8 @@ import javax.validation.constraints.Min;
 public class PageQueryReq {
     
     @Min(value = 1, message = "页码必须大于或等于1")
-    private Integer pageAt = 1;
+    private Integer page = 1;
     @Max(value = 100, message = "每页条数必须小于或等于100")
-    private Integer pageSize = 15;
+    private Integer size = 15;
     
 }

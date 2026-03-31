@@ -102,7 +102,7 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
         // ==========================================
         // 1. 第一步：仅对【角色主表】进行干净的物理分页
         // ==========================================
-        Page<AppRole> page = new Page<>(req.getPageAt(), req.getPageSize());
+        Page<AppRole> page = new Page<>(req.getPage(), req.getSize());
         LambdaQueryWrapper<AppRole> queryWrapper = new LambdaQueryWrapper<AppRole>()
                 .eq(AppRole::getCompanyId, companyId)
                 .orderByDesc(AppRole::getCreateTime);

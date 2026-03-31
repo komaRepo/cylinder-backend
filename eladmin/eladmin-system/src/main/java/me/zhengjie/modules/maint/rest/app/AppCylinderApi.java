@@ -45,7 +45,7 @@ public class AppCylinderApi {
      * 制造商、经销商、充装站 都有这个权限
      */
     @PostMapping("/out")
-    @PreAuthorize("@el.check('app:cylinder:out')")
+    // @PreAuthorize("@el.check('app:cylinder:out')")
     @Valid
     public ResponseResult<Boolean> scanOut(@RequestBody CylinderFlowDto dto) {
         if (dto.getTargetCompanyId() == null) {
@@ -60,7 +60,7 @@ public class AppCylinderApi {
      * 制造商、经销商、充装站 都有这个权限
      */
     @PostMapping("/in")
-    @PreAuthorize("@el.check('app:cylinder:in')")
+    // @PreAuthorize("@el.check('app:cylinder:in')")
     @Valid
     public ResponseResult<Boolean> scanIn(@RequestBody CylinderFlowDto dto) {
         cylinderService.scanIn(dto);
@@ -72,7 +72,7 @@ public class AppCylinderApi {
      * 扫码充气 只有充装站有这个权限
      */
     @PostMapping("/fill")
-    @PreAuthorize("@el.check('app:cylinder:fill')")
+    // @PreAuthorize("@el.check('app:cylinder:fill')")
     @Valid
     public ResponseResult<Boolean> fillCylinder(@RequestBody CylinderFillDto dto) {
         cylinderService.fillCylinder(dto);

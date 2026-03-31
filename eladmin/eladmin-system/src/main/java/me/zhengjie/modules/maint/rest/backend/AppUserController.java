@@ -60,8 +60,8 @@ public class AppUserController {
                 cmd.getStatus(),
                 cmd.getCreateTimeStart(),
                 cmd.getCreateTimeEnd(),
-                cmd.getPageAt(),
-                cmd.getPageSize()
+                cmd.getPage(),
+                cmd.getSize()
         );
         
         return ResponseResult.success(PageUtil.toPage(details.getRecords(), details.getTotal()));
@@ -74,10 +74,10 @@ public class AppUserController {
     @PostMapping("/pending-list")
     // @PreAuthorize("@el.check('appUser:audit')")
     public ResponseResult<PageResult<AppUserDetail>> getPendingPage(
-            @RequestParam(defaultValue = "1") Integer current,
+            @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         // 调用分页 Service
-        Page<AppUserDetail> pageData = appUserService.getPendingPage(current, size);
+        Page<AppUserDetail> pageData = appUserService.getPendingPage(page, size);
         return ResponseResult.success(PageUtil.toPage(pageData.getRecords(), pageData.getTotal()));
     }
     
