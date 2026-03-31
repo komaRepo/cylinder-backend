@@ -16,6 +16,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
@@ -48,6 +49,7 @@ public class CylinderController {
     /**
      * 制造商：批量导入气瓶 RFID 标签
      */
+    @ApiOperation("制造商：批量导入气瓶 RFID 标签")
     @PostMapping("/import")
     // @PreAuthorize("@el.check('app:cylinder:produce')")
     public ResponseResult<String> importCylinders(@RequestParam("file") MultipartFile file) {

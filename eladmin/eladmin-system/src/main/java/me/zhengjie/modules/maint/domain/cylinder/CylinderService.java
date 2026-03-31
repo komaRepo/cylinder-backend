@@ -93,11 +93,11 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
             }
             
             // 极限风控 2：Excel 内部数据去重防呆
-            String qrcode = label.getUniqueInfo().getFullCode();
-            if (uniqueQrcodes.contains(qrcode)) {
+            String code = label.getUniqueInfo().getFullCode();
+            if (uniqueQrcodes.contains(code)) {
                 continue; // 如果 Excel 里有重复的行，直接跳过
             }
-            uniqueQrcodes.add(qrcode);
+            uniqueQrcodes.add(code);
             parsedLabels.add(label);
         }
         
@@ -106,11 +106,11 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 使用 IN 语句一次性查出数据库中已经存在的二维码
         List<Cylinder> existCylinders = this.baseMapper.selectList(new LambdaQueryWrapper<Cylinder>()
-                .in(Cylinder::getQrcode, uniqueQrcodes)
-                .select(Cylinder::getQrcode)); // 优化性能，只查 code
+                .in(Cylinder::getCode, uniqueQrcodes)
+                .select(Cylinder::getCode)); // 优化性能，只查 code
         
         if (CollUtil.isNotEmpty(existCylinders)) {
-            String duplicateCodes = existCylinders.stream().map(Cylinder::getQrcode).collect(Collectors.joining(","));
+            String duplicateCodes = existCylinders.stream().map(Cylinder::getCode).collect(Collectors.joining(","));
             // 实际业务中可能只需要记录错误日志并跳过，这里为了严谨直接抛异常打断
             throw new BusinessException(400, "导入失败！发现系统已存在的重复标签: " + duplicateCodes);
         }
@@ -163,8 +163,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         for (RfidParserUtil.RfidLabel label : parsedLabels) {
             // 组装气瓶主表
             Cylinder cylinder = new Cylinder();
+            cylinder.setType(CylinderType.of(Integer.parseInt(label.getUniqueInfo().getCategoryCode())));
             cylinder.setCode(label.getUniqueInfo().getFullCode());
-            cylinder.setQrcode(label.getUniqueInfo().getFullCode());
             cylinder.setSpec(label.getMfgExtInfo().getModelCode());
             cylinder.setVolume(label.getMfgExtInfo().getVolume().doubleValue());
             // 注意：重量(皮重)在 RFID 里没体现，可能需要后续补充，或者让前端多传一个统一个皮重参数
@@ -218,7 +218,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         // 1. 查出气瓶
         Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
-                .eq(Cylinder::getQrcode, dto.getQrcode()));
+                .eq(Cylinder::getCode, dto.getQrcode()));
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息，请先进行出厂建档激活！");
         }
@@ -273,7 +273,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         // 1. 查出气瓶
         Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
-                .eq(Cylinder::getQrcode, dto.getQrcode()));
+                .eq(Cylinder::getCode, dto.getQrcode()));
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息！");
         }
@@ -361,7 +361,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         // 2. 查出气瓶物理档案
         Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
-                .eq(Cylinder::getQrcode, dto.getQrcode()));
+                .eq(Cylinder::getCode, dto.getQrcode()));
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息，请核对二维码！");
         }
@@ -435,10 +435,6 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         this.baseMapper.updateById(lockObj);
     }
     
-    
-    private final CylinderLifecycleMapper cylinderLifecycleMapper;
-    private final OperationLogMapper operationLogMapper;
-    
     /**
      * 工业级辅助方法 1：记录气瓶生命周期轨迹
      */
@@ -451,7 +447,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         lifecycle.setEventTime(new Date());
         lifecycle.setRemark(remark);
         
-        cylinderLifecycleMapper.insert(lifecycle);
+        cylinderLifecycleService.save(lifecycle);
     }
     
     /**

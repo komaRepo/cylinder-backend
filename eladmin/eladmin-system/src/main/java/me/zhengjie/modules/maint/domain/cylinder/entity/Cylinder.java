@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
+import me.zhengjie.modules.maint.domain.enums.CylinderType;
 
 import java.util.Date;
 
@@ -18,8 +19,8 @@ public class Cylinder {
     @Schema(description = "气瓶唯一编号")
     private String code;
     
-    @Schema(description = "二维码内容")
-    private String qrcode;
+    @Schema(description = "气瓶类型")
+    private CylinderType type;
     
     @Schema(description = "气瓶规格")
     private String spec;
