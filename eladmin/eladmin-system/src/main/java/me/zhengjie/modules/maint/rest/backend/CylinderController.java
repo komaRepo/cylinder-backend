@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
+import me.zhengjie.modules.maint.domain.dto.CylinderDetailDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderExcelDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderPageDto;
 import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
@@ -91,6 +92,18 @@ public class CylinderController {
     public ResponseResult<PageResult<CylinderPageDto>> pageQuery(@RequestBody CylinderQueryReq req) {
         PageResult<CylinderPageDto> pageData = cylinderService.queryCylinderPage(req);
         return ResponseResult.success(pageData);
+    }
+    
+    
+    /**
+     * 管理端：获取气瓶全维度溯源详情 (时间轴)
+     */
+    @ApiOperation("管理端：获取气瓶全维度溯源详情")
+    @GetMapping("/{id}")
+    // @PreAuthorize("@el.check('cylinder:list')")
+    public ResponseResult<CylinderDetailDto> getDetail(@PathVariable("id") Long id) {
+        CylinderDetailDto detail = cylinderService.getCylinderDetail(id);
+        return ResponseResult.success(detail);
     }
     
 }

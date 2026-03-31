@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import me.zhengjie.modules.maint.domain.enums.AccountType;
 import me.zhengjie.modules.maint.domain.enums.LifecycleEventEnum;
 
 import java.util.Date;
@@ -25,6 +26,9 @@ public class CylinderLifecycle {
     
     @Schema(description = "相关企业ID")
     private Long companyId;
+    
+    @Schema(description = "账号类型")
+    private AccountType accountType;
     
     @Schema(description = "操作人ID")
     private Long operatorId;

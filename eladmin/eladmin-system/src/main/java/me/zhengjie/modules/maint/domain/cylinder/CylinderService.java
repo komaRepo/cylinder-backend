@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.*;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
+import me.zhengjie.modules.maint.domain.dto.CylinderDetailDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderFillDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderFlowDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderPageDto;
@@ -30,6 +31,8 @@ import me.zhengjie.modules.maint.domain.enums.*;
 import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
 import me.zhengjie.modules.maint.util.RfidParserUtil;
 import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.system.domain.User;
+import me.zhengjie.modules.system.mapper.UserMapper;
 import me.zhengjie.utils.PageResult;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -58,6 +61,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     private final CylinderBatchMapper cylinderBatchMapper;
     private final CylinderLifecycleService cylinderLifecycleService;
     private final OperationLogMapper operationLogMapper;
+    private final AppUserMapper appUserMapper;
+    private final UserMapper sysUserMapper;
     
     
     /**
@@ -198,6 +203,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
             lifecycle.setEventType(LifecycleEventEnum.PRODUCE);
             lifecycle.setCompanyId(myCompanyId);
             lifecycle.setOperatorId(myUserId);
+            lifecycle.setAccountType(AccountType.ADMIN);
             lifecycle.setEventTime(now);
             lifecycle.setRemark("Excel 批量扫码建档入库");
             insertLifecycles.add(lifecycle);
@@ -252,11 +258,10 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 6. 记录系统级防黑客操作日志
         // ==========================================
-        recordOperationLog(
-                OperationType.OUT,
-                TargetType.CYLINDER,  // 目标对象是气瓶
-                cylinder.getId()
-        );
+        recordOperationLog(OperationType.OUT, TargetType.CYLINDER, cylinder.getId());
+        
+        // 记录气瓶生命周期
+        recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.TRANSFER_OUT, "扫码出库", AccountType.APP);
         
         // 7. 更新气瓶主表 (控制权暂时不交接，状态改为运输中)
         Cylinder updateObj = new Cylinder();
@@ -298,11 +303,10 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 5. 记录系统级防黑客操作日志
         // ==========================================
-        recordOperationLog(
-                OperationType.IN,
-                TargetType.CYLINDER,  // 目标对象是气瓶
-                cylinder.getId()
-        );
+        recordOperationLog(OperationType.IN, TargetType.CYLINDER, cylinder.getId());
+        
+        // 记录气瓶生命周期
+        recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.TRANSFER_OUT, "扫码入库", AccountType.APP);
         
         // 6. 更新气瓶主表：【核心控制权正式移交！】
         Cylinder updateObj = new Cylinder();
@@ -413,11 +417,10 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 6. 记录系统级防黑客操作日志
         // ==========================================
-        recordOperationLog(
-                OperationType.INFLATE,
-                TargetType.CYLINDER,  // 目标对象是气瓶
-                cylinder.getId()
-        );
+        recordOperationLog(OperationType.INFLATE, TargetType.CYLINDER,  cylinder.getId());
+        
+        // 记录气瓶生命周期
+        recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.FILL, "扫码充气", AccountType.APP);
         
         // ==========================================
         // 7. 更新气瓶主表状态
@@ -443,12 +446,13 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     /**
      * 工业级辅助方法 1：记录气瓶生命周期轨迹
      */
-    private void recordLifecycle(Long cylinderId, Long companyId, LifecycleEventEnum eventEnum, String remark) {
+    private void recordLifecycle(Long cylinderId, Long companyId, LifecycleEventEnum eventEnum, String remark, AccountType accountType) {
         CylinderLifecycle lifecycle = new CylinderLifecycle();
         lifecycle.setCylinderId(cylinderId);
         lifecycle.setEventType(eventEnum);
         lifecycle.setCompanyId(companyId);
         lifecycle.setOperatorId(SecurityUtils.getUserId());
+        lifecycle.setAccountType(accountType);
         lifecycle.setEventTime(new Date());
         lifecycle.setRemark(remark);
         
@@ -590,6 +594,145 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         }).collect(Collectors.toList());
         
         return new PageResult<>(dtoList, page.getTotal());
+    }
+    
+    
+    /**
+     * 管理端查询气瓶详情（含生命周期轨迹）
+     * @param id
+     * @return
+     */
+    public CylinderDetailDto getCylinderDetail(Long id) {
+        // ==========================================
+        // 1. 查询主表并进行极其严格的数据越权拦截
+        // ==========================================
+        Cylinder cylinder = this.baseMapper.selectById(id);
+        if (cylinder == null) {
+            throw new BusinessException(404, "未找到该气瓶档案！");
+        }
+        
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        Boolean isAdmin = SecurityUtils.getCurrentUser().getUser().getIsAdmin();
+        
+        // 极限防越权：如果你不是超级管理员，你只能看：
+        // 1. 你自己造的瓶子 (manufacturerId)
+        // 2. 当前在你手里的瓶子 (currentCompanyId)
+        // 3. 曾经经过你手的瓶子 (ownerPath 包含你)
+        if (!isAdmin) {
+            boolean isMine = cylinder.getCurrentCompanyId().equals(myCompanyId) ||
+                    cylinder.getManufacturerId().equals(myCompanyId) ||
+                    (cylinder.getOwnerPath() != null && cylinder.getOwnerPath().contains("," + myCompanyId + ","));
+            if (!isMine) {
+                throw new BusinessException(403, "无权查看！该气瓶既不属于您的网点，也未流经过您的网点。");
+            }
+        }
+        
+        CylinderDetailDto dto = new CylinderDetailDto();
+        BeanUtils.copyProperties(cylinder, dto);
+        
+        // ==========================================
+        // 2. 查出它所有的生命周期轨迹 (按时间倒序排，最新的在最上面)
+        // ==========================================
+        List<CylinderLifecycle> lifecycles = cylinderLifecycleService.list(
+                new LambdaQueryWrapper<CylinderLifecycle>()
+                        .eq(CylinderLifecycle::getCylinderId, cylinder.getId())
+                        .orderByDesc(CylinderLifecycle::getEventTime)
+        );
+        
+        // ==========================================
+        // 3. 【极速映射准备】分别收集两套用户体系的 ID
+        // ==========================================
+        Set<Long> companyIdsToFetch = new HashSet<>();
+        companyIdsToFetch.add(cylinder.getManufacturerId());
+        companyIdsToFetch.add(cylinder.getCurrentCompanyId());
+        
+        Set<Long> appUserIdsToFetch = new HashSet<>();
+        Set<Long> adminUserIdsToFetch = new HashSet<>();
+        
+        if (CollUtil.isNotEmpty(lifecycles)) {
+            lifecycles.forEach(lc -> {
+                if (lc.getCompanyId() != null) {
+                    companyIdsToFetch.add(lc.getCompanyId());
+                }
+                
+                // 核心逻辑：根据 accountType 将 ID 分流到不同的 Set 中
+                if (lc.getOperatorId() != null && lc.getAccountType() != null) {
+                    if (AccountType.APP.equals(lc.getAccountType())) {
+                        appUserIdsToFetch.add(lc.getOperatorId());
+                    } else if (AccountType.ADMIN.equals(lc.getAccountType())) {
+                        adminUserIdsToFetch.add(lc.getOperatorId());
+                    }
+                }
+            });
+        }
+        
+        // ==========================================
+        // 4. 批量执行 IN 查询，获取字典 Map (拒绝 N+1 连表)
+        // ==========================================
+        Map<Long, String> companyNameMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(companyIdsToFetch)) {
+            List<Company> companies = companyMapper.selectBatchIds(companyIdsToFetch);
+            companyNameMap = companies.stream().collect(Collectors.toMap(Company::getId, Company::getName));
+        }
+        
+        // 4.1 翻译 APP 端用户
+        Map<Long, String> appUserNameMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(appUserIdsToFetch)) {
+            List<AppUser> appUsers = appUserMapper.selectBatchIds(appUserIdsToFetch);
+            appUserNameMap = appUsers.stream().collect(Collectors.toMap(AppUser::getId, AppUser::getUsername));
+        }
+        
+        // 4.2 翻译 管理端用户 (假设实体名为 User)
+        Map<Long, String> adminUserNameMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(adminUserIdsToFetch)) {
+            List<User> adminUsers = sysUserMapper.selectBatchIds(adminUserIdsToFetch);
+            adminUserNameMap = adminUsers.stream().collect(Collectors.toMap(User::getId, User::getUsername));
+        }
+        
+        // ==========================================
+        // 5. 补充主表翻译字段 (企业名、批次号)
+        // ==========================================
+        dto.setManufacturerName(companyNameMap.get(cylinder.getManufacturerId()));
+        dto.setCurrentCompanyName(companyNameMap.get(cylinder.getCurrentCompanyId()));
+        
+        if (cylinder.getBatchId() != null) {
+            CylinderBatch batch = cylinderBatchMapper.selectById(cylinder.getBatchId());
+            if (batch != null) {
+                dto.setBatchNo(batch.getBatchNo());
+            }
+        }
+        
+        // ==========================================
+        // 6. 拼装时间轴节点
+        // ==========================================
+        List<CylinderDetailDto.LifecycleNode> timeline = new ArrayList<>();
+        if (CollUtil.isNotEmpty(lifecycles)) {
+            for (CylinderLifecycle lc : lifecycles) {
+                CylinderDetailDto.LifecycleNode node = new CylinderDetailDto.LifecycleNode();
+                
+                node.setEventName(lc.getEventType() != null ? lc.getEventType().getName() : "未知操作");
+                node.setEventTime(lc.getEventTime());
+                node.setCompanyName(companyNameMap.getOrDefault(lc.getCompanyId(), "未知网点"));
+                
+                // 核心逻辑：根据 accountType 从对应的 Map 中获取精准的人名
+                String operatorName = "系统/未知用户";
+                if (lc.getOperatorId() != null && lc.getAccountType() != null) {
+                    if (AccountType.APP.equals(lc.getAccountType())) {
+                        operatorName = appUserNameMap.getOrDefault(lc.getOperatorId(), "未知APP用户") + " (APP端)";
+                    } else if (AccountType.ADMIN.equals(lc.getAccountType())) {
+                        operatorName = adminUserNameMap.getOrDefault(lc.getOperatorId(), "未知管理员") + " (管理端)";
+                    }
+                }
+                node.setOperatorName(operatorName);
+                
+                node.setRemark(lc.getRemark());
+                
+                timeline.add(node);
+            }
+        }
+        dto.setTimeline(timeline);
+        
+        return dto;
     }
     
     

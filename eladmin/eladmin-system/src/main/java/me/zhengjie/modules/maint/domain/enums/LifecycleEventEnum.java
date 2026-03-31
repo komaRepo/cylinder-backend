@@ -43,4 +43,16 @@ public enum LifecycleEventEnum {
         this.code = code;
         this.name = name;
     }
+    
+    
+    public static LifecycleEventEnum getEventEnumByCode(Integer code) {
+        if (code == null) return null;
+        for (LifecycleEventEnum e : LifecycleEventEnum.values()) {
+            if (e.getCode() == code) {
+                return e;
+            }
+        }
+        return null;
+    }
+    
 }
