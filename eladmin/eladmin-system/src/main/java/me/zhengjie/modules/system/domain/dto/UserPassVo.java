@@ -18,6 +18,8 @@ package me.zhengjie.modules.system.domain.dto;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
+
 /**
  * 修改密码的 Vo 类
  * @author Zheng Jie
@@ -27,8 +29,10 @@ import lombok.Data;
 public class UserPassVo {
 
     @ApiModelProperty(value = "旧密码")
+    @NotBlank(message = "旧密码不能为空")
     private String oldPass;
 
     @ApiModelProperty(value = "新密码")
+    @NotBlank(message = "新密码不能为空")
     private String newPass;
 }
