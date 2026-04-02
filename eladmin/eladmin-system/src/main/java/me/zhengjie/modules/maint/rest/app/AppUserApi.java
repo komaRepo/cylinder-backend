@@ -106,11 +106,11 @@ public class AppUserApi {
     
     
     @ApiOperation("退出登录")
-    @AnonymousDeleteMapping(value = "/logout")
-    public ResponseEntity<Object> logout(HttpServletRequest request) {
+    @PostMapping(value = "/logout")
+    public ResponseResult<Boolean> logout(HttpServletRequest request) {
         String token = tokenProvider.getToken(request);
         onlineUserService.logout(token);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseResult.success(Boolean.TRUE);
     }
     
 }
