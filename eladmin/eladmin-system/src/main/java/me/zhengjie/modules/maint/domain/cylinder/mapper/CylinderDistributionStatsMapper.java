@@ -16,6 +16,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import me.zhengjie.modules.maint.domain.cylinder.entity.CylinderDistributionStats;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * TODO
  *
@@ -24,5 +26,7 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface CylinderDistributionStatsMapper extends BaseMapper<CylinderDistributionStats> {
-
+    
+    List<CylinderDistributionStats> aggregateDistributionSnapshot();
+    
 }

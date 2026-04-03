@@ -15,6 +15,10 @@ package me.zhengjie.modules.maint.domain.cylinder.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import me.zhengjie.modules.maint.domain.cylinder.entity.CompanyDailyStats;
 import org.apache.ibatis.annotations.Mapper;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * TODO
@@ -25,4 +29,9 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface CompanyDailyStatsMapper extends BaseMapper<CompanyDailyStats> {
     
+
+    List<CompanyDailyStats> aggregateDailyStats(@Param("startTime") Date startTime,
+                                                @Param("endTime") Date endTime,
+                                                @Param("statDate") Date statDate);
+
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="me.zhengjie.modules.maint.domain.cylinder.mapper.CylinderDistributionStatsMapper">
+    
+
+    <select id="aggregateDistributionSnapshot" resultType="me.zhengjie.modules.maint.domain.cylinder.entity.CylinderDistributionStats">
+        SELECT
+            c.province,
+            c.city,
+            cy.current_company_id AS companyId,
+            cy.spec AS cylinderSpec,
+            COUNT(cy.id) AS totalCount
+        FROM cylinder cy
+                 JOIN company c ON cy.current_company_id = c.id
+        -- 只统计还在我们系统里流转的，报废的(status=4)不算
+        WHERE cy.current_status != 4
+        GROUP BY c.province, c.city, cy.current_company_id, cy.spec
+    </select>
+
+</mapper>

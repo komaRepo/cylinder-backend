@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyDailyStatsMapper">
+
+
+    <select id="aggregateDailyStats" resultType="me.zhengjie.modules.maint.domain.cylinder.entity.CompanyDailyStats">
+        SELECT
+            company_id AS companyId,
+            #{statDate} AS statDate,
+            -- 利用 SUM(CASE WHEN...) 实现一次扫描，多列计数！极速！
+            SUM(CASE WHEN scan_type = 2 THEN 1 ELSE 0 END) AS fillCount,
+            SUM(CASE WHEN scan_type = 3 THEN 1 ELSE 0 END) AS inspectionCount,
+            SUM(CASE WHEN scan_type = 4 THEN 1 ELSE 0 END) AS inCount,
+            SUM(CASE WHEN scan_type = 5 THEN 1 ELSE 0 END) AS outCount
+        FROM scan_record
+        WHERE scan_time &gt;= #{startTime} AND scan_time &lt; #{endTime}
+        GROUP BY company_id
+    </select>
+
+</mapper>
