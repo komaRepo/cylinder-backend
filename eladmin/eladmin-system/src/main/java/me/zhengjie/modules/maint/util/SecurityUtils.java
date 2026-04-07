@@ -23,22 +23,19 @@ public class SecurityUtils {
             throw new BusinessException(ResultCodeEnum.UNAUTHORIZED);
         }
         
-        // 1. 安全提取出 username (此时它只是原生的 Spring User)
         Object principal = authentication.getPrincipal();
-        String username;
+        String smartSubject; // 此时拿到的不再是单纯的 username，而是 "APP:zhangsan"
         if (principal instanceof UserDetails) {
-            username = ((UserDetails) principal).getUsername();
+            smartSubject = ((UserDetails) principal).getUsername();
         } else {
-            username = principal.toString();
+            smartSubject = principal.toString();
         }
         
-        // 2. 动态获取 Eladmin 的 UserDetailsService
         UserDetailsService userDetailsService = SpringBeanHolder.getBean(UserDetailsService.class);
         
-        // 3. 重新加载完整的用户信息
-        // 💡 这里的神妙之处：Eladmin 底层会直接命中 Redis 缓存，
-        // 返回的正是我们之前在 loadUserByUsername 里塞满了 companyId 的那个 JwtUserDto！
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        // 【核心改造 2】：将 "APP:zhangsan" 传给底层
+        // Eladmin 的 @Cacheable 会以 "APP:zhangsan" 为 Key 存入 Redis，彻底绝缘了端冲突！
+        UserDetails userDetails = userDetailsService.loadUserByUsername(smartSubject);
         
         return (JwtUserDto) userDetails;
     }

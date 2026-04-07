@@ -26,6 +26,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.*;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
 import me.zhengjie.modules.maint.domain.dto.AppUserDetail;
 import me.zhengjie.modules.maint.domain.dto.LoginVo;
+import me.zhengjie.modules.maint.domain.enums.AccountType;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import me.zhengjie.modules.maint.domain.enums.UserType;
@@ -186,6 +187,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
                                        .typeDealer(company.getTypeDealer())
                                        .typeManufacturer(company.getTypeManufacturer())
                                        .typeInspection(company.getTypeInspection())
+                                       .accountType(AccountType.APP)
                                        .build();
         
         // 7. 生成 Token

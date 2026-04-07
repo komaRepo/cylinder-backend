@@ -18,6 +18,7 @@ package me.zhengjie.modules.security.service.dto;
 import com.alibaba.fastjson2.annotation.JSONField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
+import me.zhengjie.modules.maint.domain.enums.AccountType;
 import me.zhengjie.modules.system.domain.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 @Getter
 @Builder
 @AllArgsConstructor
+@Setter
 public class JwtUserDto implements UserDetails {
 
     @ApiModelProperty(value = "用户")
@@ -49,6 +51,7 @@ public class JwtUserDto implements UserDetails {
     private Integer typeDealer;
     private Integer typeManufacturer;
     private Integer typeInspection;
+    private AccountType accountType;
 
     public Set<String> getRoles() {
         return authorities.stream().map(AuthorityDto::getAuthority).collect(Collectors.toSet());

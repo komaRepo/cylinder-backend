@@ -27,6 +27,7 @@ import me.zhengjie.annotation.rest.AnonymousGetMapping;
 import me.zhengjie.annotation.rest.AnonymousPostMapping;
 import me.zhengjie.config.properties.RsaProperties;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.modules.maint.domain.enums.AccountType;
 import me.zhengjie.modules.security.config.CaptchaConfig;
 import me.zhengjie.modules.security.config.enums.LoginCodeEnum;
 import me.zhengjie.modules.security.config.LoginProperties;
@@ -92,7 +93,8 @@ public class AuthController {
         //     throw new BadRequestException("验证码错误");
         // }
         // 获取用户信息
-        JwtUserDto jwtUser = userDetailsService.loadUserByUsername(authUser.getUsername());
+        String username = AccountType.ADMIN.name().concat(":").concat(authUser.getUsername());
+        JwtUserDto jwtUser = userDetailsService.loadUserByUsername(username);
         // 验证用户密码
         if (!passwordEncoder.matches(password, jwtUser.getPassword())) {
             throw new BadRequestException("登录密码错误");

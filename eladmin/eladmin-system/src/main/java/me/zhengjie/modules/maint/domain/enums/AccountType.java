@@ -22,8 +22,8 @@ import lombok.Getter;
  */
 @Getter
 public enum AccountType {
-    APP(1, "APP用户"),
-    ADMIN(2, "管理端用户"),
+    APP(1, "app"),
+    ADMIN(2, "admin"),
     
     ;
     
@@ -34,14 +34,6 @@ public enum AccountType {
     AccountType(int code, String name) {
         this.code = code;
         this.name = name;
-    }
-    
-     public int getCode() {
-        return code;
-    }
-    
-    public String getName() {
-        return name;
     }
     
      public static AccountType getByCode(Integer code) {

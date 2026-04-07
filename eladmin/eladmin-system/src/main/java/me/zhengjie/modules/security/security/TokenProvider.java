@@ -71,19 +71,18 @@ public class TokenProvider implements InitializingBean {
     public String createToken(JwtUserDto user) {
         // 设置参数
         Map<String, Object> claims = new HashMap<>(6);
-        // 设置用户ID
         claims.put(AUTHORITIES_UID_KEY, user.getUser().getId());
-        // 设置UUID，确保每次Token不一样
         claims.put(AUTHORITIES_UUID_KEY, IdUtil.simpleUUID());
-        // 直接调用 Jwts.builder() 创建新实例
+        
+        // 【核心改造 1】：拼接智能前缀！解决多表查询和 Redis 缓存 Key 冲突的问题
+        // 生成出来的 subject 格式会变成 "APP:zhangsan" 或 "ADMIN:admin"
+        String smartSubject = user.getAccountType().name() + ":" + user.getUsername();
+        
         return Jwts.builder()
-                // 设置自定义 Claims
-                .setClaims(claims)
-                // 设置主题
-                .setSubject(user.getUsername())
-                // 使用预生成的签名密钥和算法签名
-                .signWith(signingKey, SignatureAlgorithm.HS512)
-                .compact();
+                   .setClaims(claims)
+                   .setSubject(smartSubject) // 设置带前缀的 Subject
+                   .signWith(signingKey, SignatureAlgorithm.HS512)
+                   .compact();
     }
 
     /**
