@@ -70,7 +70,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
     /**
      * 获取app用户信息
      */
-    public Page<AppUserDetail> fetchUserList(String username, String phone, UserStatus status,
+    public Page<AppUserDetail> fetchUserList(Long roleId, String username, String phone, UserStatus status,
                                              Date createTimeStart, Date createTimeEnd, Integer pageAt, Integer pageSize) {
         Long companyId = SecurityUtils.getCompanyId();
         if (companyId == null) {
@@ -79,7 +79,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         
         Page<Object> page = Page.of(pageAt, pageSize);
         
-        return this.baseMapper.fetchUserList(companyId, username, phone, status, createTimeStart, createTimeEnd, page);
+        return this.baseMapper.fetchUserList(companyId, roleId, username, phone, status, createTimeStart, createTimeEnd, page);
     }
     
     /**

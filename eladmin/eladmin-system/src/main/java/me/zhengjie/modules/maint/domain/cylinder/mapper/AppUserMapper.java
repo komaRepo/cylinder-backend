@@ -34,6 +34,7 @@ public interface AppUserMapper extends BaseMapper<AppUser> {
     
     Page<AppUserDetail> fetchUserList(
             @RequestParam("companyId") Long companyId,
+            @RequestParam("roleId") Long roleId,
             @RequestParam("username") String username,
             @RequestParam("phone") String phone,
             @RequestParam("status") UserStatus status,

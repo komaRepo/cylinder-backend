@@ -48,6 +48,8 @@ public class AppUserDetail {
     
     private Date createTime;
     
+    private Long roleId;
+    
     @Mapper
     public interface Converter {
         

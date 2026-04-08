@@ -5,41 +5,47 @@
 
     <select id="fetchUserList" resultType="me.zhengjie.modules.maint.domain.dto.AppUserDetail">
         SELECT
-        id,
-        username,
-        password,
-        phone,
-        company_id AS companyId,
-        user_type AS userType,
-        status,
-        activator_id AS activatorId,
-        last_login AS lastLogin,
-        create_time AS createTime
-        FROM app_user
+        u.id,
+        u.username,
+        u.password,
+        u.phone,
+        u.company_id AS companyId,
+        u.user_type AS userType,
+        u.status,
+        u.activator_id AS activatorId,
+        u.last_login AS lastLogin,
+        u.create_time AS createTime,
+        ur.role_id AS roleId
+        FROM app_user u
+        LEFT JOIN app_user_role ur ON u.id = ur.user_id
         <where>
-            company_id = #{companyId}
+            u.company_id = #{companyId}
 
             <if test="username != null and username != ''">
-                AND username LIKE concat('%', #{username}, '%')
+                AND u.username LIKE concat('%', #{username}, '%')
             </if>
 
             <if test="phone != null and phone != ''">
-                AND phone LIKE concat('%', #{phone}, '%')
+                AND u.phone LIKE concat('%', #{phone}, '%')
             </if>
 
             <if test="status != null">
-                AND status = #{status.}
+                AND u.status = #{status}
+            </if>
+
+            <if test="roleId != null">
+                AND ur.role_id = #{roleId}
             </if>
 
             <if test="createTimeStart != null">
-                AND create_time &gt;= #{createTimeStart}
+                AND u.create_time &gt;= #{createTimeStart}
             </if>
 
             <if test="createTimeEnd != null">
-                AND create_time &lt;= #{createTimeEnd}
+                AND u.create_time &lt;= #{createTimeEnd}
             </if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY u.create_time DESC
     </select>
 
 </mapper>

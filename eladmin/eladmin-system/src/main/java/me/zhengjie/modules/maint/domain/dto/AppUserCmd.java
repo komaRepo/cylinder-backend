@@ -31,6 +31,8 @@ import java.util.Date;
 @Data
 public class AppUserCmd extends PageQueryReq {
     
+    /** 角色ID */
+    private Long roleId;
     /** 用户状态 */
     private UserStatus status;
     /** 用户名 */

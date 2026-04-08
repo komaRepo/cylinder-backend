@@ -55,6 +55,7 @@ public class AppUserController {
     // @PreAuthorize("@el.check('appUser:list')")
     public ResponseResult<PageResult<AppUserDetail>> list(@RequestBody AppUserCmd cmd) {
         Page<AppUserDetail> details = appUserService.fetchUserList(
+                cmd.getRoleId(),
                 cmd.getUsername(),
                 cmd.getPhone(),
                 cmd.getStatus(),
