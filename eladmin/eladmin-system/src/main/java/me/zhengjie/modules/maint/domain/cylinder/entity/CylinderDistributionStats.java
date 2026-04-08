@@ -31,6 +31,9 @@ public class CylinderDistributionStats {
     @Schema(description = "主键ID")
     private Long id;
     
+    @Schema(description = "国家代码 (新增, 如: CN, US)")
+    private String countryCode;
+    
     @Schema(description = "省")
     private String province;
     

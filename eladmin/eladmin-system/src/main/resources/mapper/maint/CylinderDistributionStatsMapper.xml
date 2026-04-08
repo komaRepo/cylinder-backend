@@ -5,6 +5,7 @@
 
     <select id="aggregateDistributionSnapshot" resultType="me.zhengjie.modules.maint.domain.cylinder.entity.CylinderDistributionStats">
         SELECT
+            c.country_code,
             c.province,
             c.city,
             cy.current_company_id AS companyId,

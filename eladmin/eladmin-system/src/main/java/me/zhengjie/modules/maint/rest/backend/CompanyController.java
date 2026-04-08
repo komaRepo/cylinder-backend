@@ -66,6 +66,7 @@ public class CompanyController {
                 cmd.getLegalCode(),
                 cmd.getContactName(),
                 cmd.getContactPhone(),
+                cmd.getCountryCode(),
                 cmd.getProvince(),
                 cmd.getCity(),
                 cmd.getDistrict(),

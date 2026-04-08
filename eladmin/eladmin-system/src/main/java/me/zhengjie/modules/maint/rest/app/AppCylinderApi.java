@@ -12,6 +12,8 @@
  */
 package me.zhengjie.modules.maint.rest.app;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
@@ -31,6 +33,7 @@ import javax.validation.Valid;
  * @author koma at cylinder-backend
  * @since 2026/3/25
  */
+@Api(tags = "APP：气瓶流转相关接口")
 @Slf4j
 @RestController
 @RequestMapping("/api/app/cylinder")
@@ -44,6 +47,7 @@ public class AppCylinderApi {
      * 扫码出库 (发货)
      * 制造商、经销商、充装站 都有这个权限
      */
+    @ApiOperation("扫码出库")
     @PostMapping("/out")
     // @PreAuthorize("@el.check('app:cylinder:out')")
     @Valid
@@ -59,6 +63,7 @@ public class AppCylinderApi {
      * 扫码入库 (收货)
      * 制造商、经销商、充装站 都有这个权限
      */
+    @ApiOperation("扫码入库")
     @PostMapping("/in")
     // @PreAuthorize("@el.check('app:cylinder:in')")
     @Valid
@@ -71,6 +76,7 @@ public class AppCylinderApi {
     /**
      * 扫码充气 只有充装站有这个权限
      */
+    @ApiOperation("扫码充气")
     @PostMapping("/fill")
     // @PreAuthorize("@el.check('app:cylinder:fill')")
     @Valid

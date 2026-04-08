@@ -48,6 +48,9 @@ public class Company {
     @Schema(description = "层级路径, 例如: 0,1,5,")
     private String path;
     
+    @Schema(description = "国家代码 (新增, 如: CN, US)")
+    private String countryCode;
+    
     @Schema(description = "省")
     private String province;
     

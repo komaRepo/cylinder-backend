@@ -50,6 +50,9 @@ public class CompanyRegisterCmd {
     @NotBlank(message = "联系人姓名不能为空")
     private String contactName;
     
+    @NotBlank(message = "国家代码不能为空")
+    private String countryCode;
+    
     @NotBlank(message = "省份不能为空")
     private String province;
     
