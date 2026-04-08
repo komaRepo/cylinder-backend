@@ -25,6 +25,7 @@ public class DashboardService {
 
     private final CompanyDailyStatsMapper dailyStatsMapper;
     private final CylinderDistributionStatsMapper distributionStatsMapper;
+    private final RegionLocalService regionLocalService;
     
     /**
      * ==========================================
@@ -96,14 +97,12 @@ public class DashboardService {
         
         query.groupBy("province");
         
-        // 🚀 动态排序逻辑：按聚合后的数量进行排序
         if ("ASC".equalsIgnoreCase(req.getSort())) {
             query.orderByAsc("SUM(total_count)");
         } else {
             query.orderByDesc("SUM(total_count)");
         }
         
-        // 🚀 动态 LIMIT 逻辑：如果前端传了 limit=10，这在 MySQL 层面能直接拦截，大幅降低内存消耗
         if (req.getLimit() != null && req.getLimit() > 0) {
             query.last("LIMIT " + req.getLimit());
         }
@@ -113,20 +112,25 @@ public class DashboardService {
         List<DashboardDto.MapChartDto> result = new ArrayList<>();
         if (CollUtil.isNotEmpty(dbStats)) {
             for (CylinderDistributionStats stat : dbStats) {
-                if (stat.getProvince() == null) continue;
+                // 这里的 stat.getProvince() 取出来的是数据库原貌，通常是 "广东省"
+                String originalProvinceName = stat.getProvince();
+                if (originalProvinceName == null) continue;
                 
                 DashboardDto.MapChartDto dto = new DashboardDto.MapChartDto();
+                
+                // 🚀 【新增】：利用内存字典，O(1) 极速拿到行政代码！
+                dto.setCode(regionLocalService.getProvinceCodeByName(originalProvinceName));
+                
                 // 清洗省份名称，适配 ECharts
-                String cleanName = stat.getProvince()
-                                       .replace("省", "")
-                                       .replace("市", "")
-                                       .replace("自治区", "")
-                                       .replace("回族", "")
-                                       .replace("维吾尔", "")
-                                       .replace("壮族", "");
+                String cleanName = originalProvinceName
+                        .replace("省", "")
+                        .replace("市", "")
+                        .replace("自治区", "")
+                        .replace("回族", "")
+                        .replace("维吾尔", "")
+                        .replace("壮族", "");
                 
                 dto.setName(cleanName);
-                // MyBatis-Plus 返回的 SUM 别名映射到 totalCount
                 dto.setValue(stat.getTotalCount() != null ? stat.getTotalCount() : 0);
                 
                 result.add(dto);

@@ -122,7 +122,12 @@ public class SecurityUtils {
      */
     public static String getCurrentUsername(String token) {
         JWT jwt = JWTUtil.parseToken(token);
-        return jwt.getPayload("sub").toString();
+        String currentUsername = jwt.getPayload("sub").toString();
+        if (currentUsername.contains(":")) {
+            return currentUsername.split(":")[1];
+        } else {
+            return currentUsername;
+        }
     }
 
     /**

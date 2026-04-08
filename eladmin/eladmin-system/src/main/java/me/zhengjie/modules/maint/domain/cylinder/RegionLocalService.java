@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,8 @@ public class RegionLocalService {
 
     // 内存级缓存，启动时加载一次，永久驻留内存
     private List<RegionTreeDto> regionTreeCache = new ArrayList<>();
+    
+    private Map<String, String> provinceNameToCodeMap = new HashMap<>();
 
     /**
      * @PostConstruct 注解表示在 Spring Bean 初始化完成后自动执行该方法
@@ -26,18 +29,24 @@ public class RegionLocalService {
     @PostConstruct
     public void init() {
         try {
-            // 1. 读取 resources/data/region.json 文件
             ClassPathResource resource = new ClassPathResource("data/region.json");
             InputStream inputStream = resource.getInputStream();
-
-            // 2. 利用 Jackson 解析 JSON，外层 Key 是父节点代码，内层是 {code: name}
+            
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Map<String, String>> rawData = mapper.readValue(
-                    inputStream, 
+                    inputStream,
                     new TypeReference<Map<String, Map<String, String>>>() {}
             );
-
-            // 3. 执行极速组装逻辑
+            
+            // 【新增】：提前把省份名称和代码的反向关系存入内存 HashMap
+            Map<String, String> provinces = rawData.get("86");
+            if (provinces != null) {
+                for (Map.Entry<String, String> entry : provinces.entrySet()) {
+                    // key: 440000, value: 广东省
+                    provinceNameToCodeMap.put(entry.getValue(), entry.getKey());
+                }
+            }
+            
             this.regionTreeCache = buildTree(rawData);
             
             log.info("✅ 本地省市区数据加载成功！共加载 {} 个省级行政区", regionTreeCache.size());
@@ -106,4 +115,16 @@ public class RegionLocalService {
     public List<RegionTreeDto> getRegionTree() {
         return this.regionTreeCache;
     }
+    
+    
+    /**
+     * 【新增】：暴露给外界调用的极速查询方法
+     * @param provinceName 数据库里的省份全称 (如: "广东省")
+     * @return 行政代码 (如: "440000")
+     */
+    public String getProvinceCodeByName(String provinceName) {
+        if (provinceName == null) return null;
+        return provinceNameToCodeMap.get(provinceName);
+    }
+    
 }

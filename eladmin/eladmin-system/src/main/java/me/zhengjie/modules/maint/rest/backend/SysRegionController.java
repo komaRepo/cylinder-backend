@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.annotation.rest.AnonymousAccess;
 import me.zhengjie.modules.maint.domain.cylinder.RegionLocalService;
 import me.zhengjie.modules.maint.domain.dto.RegionTreeDto;
 import me.zhengjie.sys.ResponseResult;
@@ -24,6 +25,7 @@ public class SysRegionController {
 
     @GetMapping("/tree")
     @ApiOperation("获取全国省市区级联树")
+    @AnonymousAccess
     public ResponseResult<List<RegionTreeDto>> getRegionTree() {
         return ResponseResult.success(regionLocalService.getRegionTree());
     }

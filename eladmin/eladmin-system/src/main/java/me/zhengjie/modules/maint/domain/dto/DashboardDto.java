@@ -28,6 +28,9 @@ public class DashboardDto {
     public static class MapChartDto {
         @Schema(description = "区域名称 (如: '广东', '北京')")
         private String name;
+        
+        @Schema(description = "区域代码 (如: '440000' 代表广东省)")
+        private String code;
 
         @Schema(description = "分布数量")
         private Integer value;
