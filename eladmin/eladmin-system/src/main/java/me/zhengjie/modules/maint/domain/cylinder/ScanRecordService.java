@@ -12,11 +12,15 @@
  */
 package me.zhengjie.modules.maint.domain.cylinder;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.entity.ScanRecord;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.ScanRecordMapper;
+import me.zhengjie.modules.maint.domain.dto.ScanRecordPageDto;
+import me.zhengjie.modules.maint.rest.command.ScanRecordQueryReq;
+import me.zhengjie.modules.maint.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 
 /**
@@ -29,5 +33,17 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ScanRecordService extends ServiceImpl<ScanRecordMapper, ScanRecord> {
 
-    
+    public Page<ScanRecordPageDto> pageQuery(ScanRecordQueryReq req) {
+        Long currentCompanyId = SecurityUtils.getCompanyId();
+        Page<ScanRecordPageDto> page = new Page<>(req.getPage(), req.getSize());
+        return (Page<ScanRecordPageDto>) this.baseMapper.pageQuery(
+                page,
+                currentCompanyId,
+                req.getScanType(),
+                req.getCylinderCode(),
+                req.getUserId(),
+                req.getStartTime(),
+                req.getEndTime()
+        );
+    }
 }

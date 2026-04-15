@@ -238,7 +238,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         if (!cylinder.getCurrentCompanyId().equals(myCompanyId)) {
             throw new BusinessException(403, "非法操作！该气瓶当前不属于您的网点，无法执行出库！");
         }
-        if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.IN_STOCK)) { // 必须是“在库”状态才能出库
+        if (!ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.IN_STOCK)) { // 必须是“在库”状态才能出库
             throw new BusinessException(400, "该气瓶当前不是【在库】状态，无法出库！");
         }
         
@@ -249,7 +249,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         }
         
         // 4. 记录物理扫码动作
-        recordScan(cylinder.getId(), myUserId, myCompanyId, 2); // ScanType 2: 出库扫码
+        recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.OUTBOUND.getCode());
         
         // 5. 记录业务流转轨迹
         Long flowId = recordFlow(cylinder.getId(), myCompanyId, dto.getTargetCompanyId(), 2, myUserId,
@@ -294,7 +294,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         }
         
         // 3. 记录物理扫码动作
-        recordScan(cylinder.getId(), myUserId, myCompanyId, 3); // ScanType 3: 入库扫码
+        recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.INBOUND.getCode());
         
         // 4. 记录业务流转轨迹
         Long flowId = recordFlow(cylinder.getId(), cylinder.getCurrentCompanyId(), myCompanyId, 3, myUserId,
@@ -379,7 +379,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         if (!cylinder.getCurrentCompanyId().equals(myCompanyId)) {
             throw new BusinessException(403, "产权异常：该气瓶当前不属于本充气站！");
         }
-        if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.IN_STOCK)) {
+        if (!ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.IN_STOCK)) {
             throw new BusinessException(400, "该气瓶不处于【在库】状态！");
         }
         Date today = new Date();
@@ -410,7 +410,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 5. 记录物理扫描流水与生命周期流转 (对接之前的逻辑)
         // ==========================================
-        recordScan(cylinder.getId(), myUserId, myCompanyId, 4); // 4: 充装
+        recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.FILL.getCode());
         Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 4, myUserId,
                 "充装完成。压力: " + dto.getFillPressure() + "，净重: " + dto.getFillWeight() + "kg");
         

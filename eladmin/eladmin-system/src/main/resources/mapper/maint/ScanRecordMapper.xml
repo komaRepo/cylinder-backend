@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="me.zhengjie.modules.maint.domain.cylinder.mapper.ScanRecordMapper">
+
+    <select id="pageQuery" resultType="me.zhengjie.modules.maint.domain.dto.ScanRecordPageDto">
+        SELECT
+            sr.id,
+            sr.cylinder_id AS cylinderId,
+            c.code AS cylinderCode,
+            sr.user_id AS userId,
+            COALESCE(au.username, su.username) AS username,
+            sr.company_id AS companyId,
+            sr.scan_type AS scanType,
+            sr.scan_time AS scanTime
+        FROM scan_record sr
+        LEFT JOIN cylinder c ON sr.cylinder_id = c.id
+        LEFT JOIN app_user au ON sr.user_id = au.id
+        LEFT JOIN sys_user su ON sr.user_id = su.user_id
+        <where>
+            sr.company_id = #{companyId}
+            <if test="scanType != null">
+                AND sr.scan_type = #{scanType}
+            </if>
+            <if test="cylinderCode != null and cylinderCode != ''">
+                AND c.code LIKE concat('%', #{cylinderCode}, '%')
+            </if>
+            <if test="userId != null">
+                AND sr.user_id = #{userId}
+            </if>
+            <if test="startTime != null">
+                AND sr.scan_time <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND sr.scan_time <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+        ORDER BY sr.scan_time DESC
+    </select>
+</mapper>

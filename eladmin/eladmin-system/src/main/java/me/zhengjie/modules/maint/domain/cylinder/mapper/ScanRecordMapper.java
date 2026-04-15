@@ -12,9 +12,14 @@
  */
 package me.zhengjie.modules.maint.domain.cylinder.mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import me.zhengjie.modules.maint.domain.cylinder.entity.ScanRecord;
+import me.zhengjie.modules.maint.domain.dto.ScanRecordPageDto;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.Date;
 
 /**
  * TODO
@@ -24,5 +29,12 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface ScanRecordMapper extends BaseMapper<ScanRecord> {
-    
+
+    IPage<ScanRecordPageDto> pageQuery(IPage<ScanRecordPageDto> page,
+                                       @Param("companyId") Long companyId,
+                                       @Param("scanType") Integer scanType,
+                                       @Param("cylinderCode") String cylinderCode,
+                                       @Param("userId") Long userId,
+                                       @Param("startTime") Date startTime,
+                                       @Param("endTime") Date endTime);
 }

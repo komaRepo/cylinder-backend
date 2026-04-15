@@ -48,7 +48,9 @@ CREATE TABLE `app_role`
     `name`        varchar(100) COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
     `company_id`  bigint   DEFAULT NULL COMMENT '企业ID',
     `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_company_role_name` (`company_id`, `name`),
+    KEY `idx_company_create_time` (`company_id`, `create_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='角色表';
@@ -97,7 +99,10 @@ CREATE TABLE `app_user`
     `create_time`  datetime                               DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `last_login`   datetime                               DEFAULT NULL COMMENT '最后登录时间',
     PRIMARY KEY (`id`),
-    KEY `idx_company` (`company_id`)
+    UNIQUE KEY `uk_username` (`username`),
+    UNIQUE KEY `uk_phone` (`phone`),
+    KEY `idx_company` (`company_id`),
+    KEY `idx_company_status_create_time` (`company_id`, `status`, `create_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='用户表';
@@ -200,6 +205,7 @@ CREATE TABLE `company`
 (
     `id`                bigint                                  NOT NULL AUTO_INCREMENT COMMENT '企业ID',
     `name`              varchar(200) COLLATE utf8mb4_general_ci NOT NULL COMMENT '企业名称',
+    `credit_code`       varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '统一社会信用代码',
     `code`              varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '企业编号',
     `legal_name`        varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '法人姓名',
     `legal_code`        varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '法人证件号',
@@ -209,6 +215,7 @@ CREATE TABLE `company`
     `type_inspection`   tinyint                                 DEFAULT '0' COMMENT '是否年检机构 0否 1是',
     `parent_id`         bigint                                  DEFAULT NULL COMMENT '上级经销商ID',
     `path`              varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '【核心】层级路径, 例如: 0,1,5,',
+    `country_code`      varchar(8) COLLATE utf8mb4_general_ci   DEFAULT 'CN' COMMENT '国家代码 (如: CN, US)',
     `province`          varchar(50) COLLATE utf8mb4_general_ci  DEFAULT NULL COMMENT '省',
     `city`              varchar(50) COLLATE utf8mb4_general_ci  DEFAULT NULL COMMENT '市',
     `district`          varchar(50) COLLATE utf8mb4_general_ci  DEFAULT NULL COMMENT '区',
@@ -221,7 +228,8 @@ CREATE TABLE `company`
     UNIQUE KEY `CODE` (`code`),
     KEY `idx_area` (`province`, `city`),
     KEY `idx_parent` (`parent_id`),
-    KEY `idx_path` (`path`)
+    KEY `idx_path` (`path`),
+    KEY `idx_status_create_time` (`status`, `create_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='企业表';
@@ -247,7 +255,8 @@ CREATE TABLE `company_daily_stats`
     `out_count`        int      DEFAULT '0' COMMENT '当日出库总数',
     `update_time`      datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_company_date` (`company_id`, `stat_date`)
+    UNIQUE KEY `uk_company_date` (`company_id`, `stat_date`),
+    KEY `idx_stat_date_company` (`stat_date`, `company_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='企业每日业务汇总表';
@@ -285,7 +294,11 @@ CREATE TABLE `cylinder`
     UNIQUE KEY `code` (`code`),
     KEY `idx_code` (`code`),
     KEY `idx_company_status` (`current_company_id`, `current_status`),
-    KEY `idx_owner_path` (`owner_path`)
+    KEY `idx_owner_path` (`owner_path`),
+    KEY `idx_company_create_time` (`current_company_id`, `create_time`),
+    KEY `idx_manufacturer` (`manufacturer_id`),
+    KEY `idx_next_inspection_date` (`next_inspection_date`),
+    KEY `idx_status_last_fill_time` (`current_status`, `last_fill_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='气瓶表';
@@ -308,7 +321,8 @@ CREATE TABLE `cylinder_batch`
     `produce_date`    date                                    DEFAULT NULL COMMENT '生产日期',
     `quantity`        int                                     DEFAULT NULL COMMENT '生产数量',
     `create_time`     datetime                                DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_manufacturer_batch_no` (`manufacturer_id`, `batch_no`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='气瓶生产批次表';
@@ -326,6 +340,7 @@ DROP TABLE IF EXISTS `cylinder_distribution_stats`;
 CREATE TABLE `cylinder_distribution_stats`
 (
     `id`            bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `country_code`  varchar(8) COLLATE utf8mb4_general_ci   DEFAULT 'CN' COMMENT '国家代码 (如: CN, US)',
     `province`      varchar(50) COLLATE utf8mb4_general_ci  DEFAULT NULL COMMENT '省',
     `city`          varchar(50) COLLATE utf8mb4_general_ci  DEFAULT NULL COMMENT '市',
     `company_id`    bigint                                  DEFAULT NULL COMMENT '所属企业ID',
@@ -333,7 +348,8 @@ CREATE TABLE `cylinder_distribution_stats`
     `total_count`   int                                     DEFAULT '0' COMMENT '气瓶总数',
     `update_time`   datetime                                DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '快照更新时间',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_area_company_spec` (`province`, `city`, `company_id`, `cylinder_spec`)
+    UNIQUE KEY `uk_area_company_spec` (`country_code`, `province`, `city`, `company_id`, `cylinder_spec`),
+    KEY `idx_company_province` (`company_id`, `province`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='气瓶地区分布快照表';
@@ -404,7 +420,8 @@ CREATE TABLE `cylinder_flow`
     PRIMARY KEY (`id`, `create_time`),
     KEY `idx_batch_flow` (`batch_flow_no`),
     KEY `idx_cylinder` (`cylinder_id`),
-    KEY `idx_to_company_time` (`to_company_id`, `create_time`)
+    KEY `idx_to_company_time` (`to_company_id`, `create_time`),
+    KEY `idx_from_company_time` (`from_company_id`, `create_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='气瓶流转记录'
@@ -465,7 +482,7 @@ CREATE TABLE `cylinder_inventory`
     `id`          bigint NOT NULL AUTO_INCREMENT COMMENT '库存ID',
     `company_id`  bigint   DEFAULT NULL COMMENT '企业ID',
     `cylinder_id` bigint   DEFAULT NULL COMMENT '气瓶ID',
-    `STATUS`      tinyint  DEFAULT NULL COMMENT '库存状态 1正常 2维修 3待检',
+    `status`      tinyint  DEFAULT NULL COMMENT '库存状态 1正常 2维修 3待检',
     `update_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_company_cylinder` (`company_id`, `cylinder_id`)
@@ -489,11 +506,13 @@ CREATE TABLE `cylinder_lifecycle`
     `cylinder_id` bigint                                  DEFAULT NULL COMMENT '气瓶ID',
     `event_type`  tinyint                                 DEFAULT NULL COMMENT '事件类型 1生产 2销售 3流转 4充气 5年检 6维修 7报废',
     `company_id`  bigint                                  DEFAULT NULL COMMENT '相关企业',
+    `account_type` tinyint                                DEFAULT NULL COMMENT '账号类型 1APP 2ADMIN',
     `operator_id` bigint                                  DEFAULT NULL COMMENT '操作人',
     `event_time`  datetime                                DEFAULT NULL COMMENT '事件时间',
     `remark`      varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (`id`),
-    KEY `idx_cylinder_event` (`cylinder_id`, `event_type`)
+    KEY `idx_cylinder_event` (`cylinder_id`, `event_type`),
+    KEY `idx_cylinder_event_time` (`cylinder_id`, `event_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='气瓶生命周期';
@@ -677,7 +696,8 @@ CREATE TABLE `operation_log`
     `longitude`   decimal(10, 7)                          DEFAULT NULL COMMENT '经度',
     `latitude`    decimal(10, 7)                          DEFAULT NULL COMMENT '纬度',
     `create_time` datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
-    PRIMARY KEY (`id`, `create_time`)
+    PRIMARY KEY (`id`, `create_time`),
+    KEY `idx_user_time` (`user_id`, `create_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='操作日志'
@@ -712,13 +732,14 @@ CREATE TABLE `scan_record`
     `cylinder_id` bigint   NOT NULL COMMENT '气瓶ID',
     `user_id`     bigint            DEFAULT NULL COMMENT '扫码用户',
     `company_id`  bigint            DEFAULT NULL COMMENT '扫码企业',
-    `scan_type`   tinyint           DEFAULT NULL COMMENT '扫码类型 1查询 2充气 3年检 4入库 5出库',
+    `scan_type`   tinyint           DEFAULT NULL COMMENT '扫码类型 1查询 2出库 3入库 4充装 5年检',
     `scan_time`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '扫码时间',
     `longitude`   decimal(10, 7)    DEFAULT NULL COMMENT '经度',
     `latitude`    decimal(10, 7)    DEFAULT NULL COMMENT '纬度',
     PRIMARY KEY (`id`, `scan_time`),
     KEY `idx_company_time` (`company_id`, `scan_time`),
-    KEY `idx_cylinder` (`cylinder_id`)
+    KEY `idx_cylinder` (`cylinder_id`),
+    KEY `idx_scan_type_time_company` (`scan_type`, `scan_time`, `company_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='扫码记录'

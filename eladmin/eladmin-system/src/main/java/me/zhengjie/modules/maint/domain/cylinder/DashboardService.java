@@ -12,6 +12,7 @@ import me.zhengjie.modules.maint.domain.dto.DashboardDataDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardQueryDto;
 import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
+import me.zhengjie.modules.maint.domain.enums.ScanType;
 import me.zhengjie.modules.maint.util.SecurityUtils;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import org.springframework.stereotype.Service;
@@ -108,7 +109,7 @@ public class DashboardService {
         if (isFiller || isAdmin) {
             Date todayStart = DateUtil.beginOfDay(new Date());
             QueryWrapper<ScanRecord> todayQuery = new QueryWrapper<>();
-            todayQuery.eq("scan_type", 2).ge("scan_time", todayStart);
+            todayQuery.eq("scan_type", ScanType.FILL.getCode()).ge("scan_time", todayStart);
             if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
                 todayQuery.in("company_id", accessibleIds); // 👈 替换为 IN
             }
