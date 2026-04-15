@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.modules.maint.domain.cylinder.DashboardService;
+import me.zhengjie.modules.maint.domain.dto.DashboardDataDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardQueryDto;
 import me.zhengjie.sys.ResponseResult;
@@ -24,6 +25,19 @@ public class AdminDashboardController {
 
     private final DashboardService dashboardService;
     
+    
+    @GetMapping("/cards")
+    @ApiOperation("获取顶部核心指标卡片 (融合实时与离线计算)")
+    public ResponseResult<DashboardDataDto.IndicatorCards> getDashboardCards() {
+        return ResponseResult.success(dashboardService.getDashboardCards());
+    }
+    
+    @GetMapping("/charts/status-pie")
+    @ApiOperation("获取气瓶状态分布饼图")
+    public ResponseResult<List<DashboardDataDto.StatusPieChart>> getStatusPieChart() {
+        return ResponseResult.success(dashboardService.getStatusPieChart());
+    }
+    
     @GetMapping("/trend/fill")
     @ApiOperation("获取动态天数充气量趋势折线图")
     // @PreAuthorize("@el.check('dashboard:list')")
@@ -39,4 +53,17 @@ public class AdminDashboardController {
     public ResponseResult<List<DashboardDto.MapChartDto>> getDistributionMap(DashboardQueryDto.MapReq req) {
         return ResponseResult.success(dashboardService.getDynamicRegionalDistributionMap(req));
     }
+    
+    @GetMapping("/charts/ranking")
+    @ApiOperation("获取企业加气业绩排行榜 TOP 5")
+    public ResponseResult<List<DashboardDataDto.KpiRankDto>> getFillRanking() {
+        return ResponseResult.success(dashboardService.getFillRanking());
+    }
+    
+    @GetMapping("/charts/efficiency")
+    @ApiOperation("获取资产效能/活跃度分布")
+    public ResponseResult<List<DashboardDataDto.EfficiencyDto>> getAssetEfficiency() {
+        return ResponseResult.success(dashboardService.getAssetEfficiency());
+    }
+    
 }
