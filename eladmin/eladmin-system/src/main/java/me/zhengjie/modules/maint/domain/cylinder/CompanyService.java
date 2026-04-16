@@ -43,6 +43,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
     
+    private final AppRoleService appRoleService;
     
     /**
      * 管理后台企业注册
@@ -110,6 +111,9 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 6. 更新路径信息
         company.setPath(path);
         this.baseMapper.updateById(company);
+        
+        // 7. 初始化默认角色
+        appRoleService.initDefaultRolesForCompany(company.getId(), type);
     }
     
     

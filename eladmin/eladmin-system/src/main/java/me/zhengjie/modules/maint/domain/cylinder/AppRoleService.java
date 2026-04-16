@@ -27,6 +27,8 @@ import me.zhengjie.modules.maint.domain.cylinder.mapper.AppRoleMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppRolePermissionMapper;
 import me.zhengjie.modules.maint.domain.dto.AppRoleDetailDto;
 import me.zhengjie.modules.maint.domain.dto.AppRoleSaveDto;
+import me.zhengjie.modules.maint.domain.enums.AppPermissionCode;
+import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.rest.command.PageQueryReq;
 import me.zhengjie.modules.maint.util.SecurityUtils;
 import me.zhengjie.utils.PageResult;
@@ -53,6 +55,8 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
     
     private final AppRolePermissionMapper appRolePermissionMapper;
     private final AppPermissionMapper appPermissionMapper;
+    private final AppRoleMapper appRoleMapper;
+    
     
     /**
      * ================= 保存角色并绑定权限 =================
@@ -175,6 +179,92 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
         resultPage.setRecords(dtoList);
         
         return PageUtil.toPage(dtoList, resultPage.getTotal());
+    }
+    
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void initDefaultRolesForCompany(Long companyId, CompanyType type) {
+        if (type == null) {
+            return;
+        }
+        
+        // 1. 【核心逻辑】一次性从数据库查出所有 APP 权限，并转为 Code -> ID 的映射字典
+        List<AppPermission> allPermissions = appPermissionMapper.selectList(null);
+        if (CollUtil.isEmpty(allPermissions)) {
+            return; // 系统尚未初始化权限字典，直接跳过
+        }
+        Map<String, Long> codeToIdMap = allPermissions.stream()
+                                                      .collect(Collectors.toMap(AppPermission::getCode, AppPermission::getId));
+        
+        // 2. 根据企业类型，动态分配角色和权限
+        switch (type) {
+            case RETAILER: // 充气商 (充装站)
+                // 站长：拥有所有操作权限
+                Long adminRoleId = createRole(companyId, "站长");
+                bindPermissions(adminRoleId, codeToIdMap,
+                        AppPermissionCode.IN, AppPermissionCode.OUT, AppPermissionCode.FILL,
+                        AppPermissionCode.INSPECT, AppPermissionCode.SCRAP, AppPermissionCode.REPAIR);
+                
+                // 充装工：只有入库、出库、充气权限
+                Long fillerRoleId = createRole(companyId, "充装工");
+                bindPermissions(fillerRoleId, codeToIdMap,
+                        AppPermissionCode.IN, AppPermissionCode.OUT, AppPermissionCode.FILL);
+                break;
+            
+            case DISTRIBUTOR: // 经销商
+                // 经销商只涉及钢瓶的收发流转
+                Long dealerAdminRoleId = createRole(companyId, "经销商管理员");
+                bindPermissions(dealerAdminRoleId, codeToIdMap,
+                        AppPermissionCode.IN, AppPermissionCode.OUT);
+                break;
+            
+            case INSPECTION: // 检验机构
+                // 检验员：负责收瓶、年检、维修、报废、发还
+                Long inspectorRoleId = createRole(companyId, "检验员");
+                bindPermissions(inspectorRoleId, codeToIdMap,
+                        AppPermissionCode.IN, AppPermissionCode.OUT,
+                        AppPermissionCode.INSPECT, AppPermissionCode.SCRAP, AppPermissionCode.REPAIR);
+                break;
+            
+            case MANUFACTURER: // 制造商
+                // 后台建档，APP 端只负责首次出库发货
+                Long makerRoleId = createRole(companyId, "发货员(默认)");
+                bindPermissions(makerRoleId, codeToIdMap, AppPermissionCode.OUT);
+                break;
+        }
+    }
+    
+    private Long createRole(Long companyId, String roleName) {
+        AppRole role = new AppRole();
+        role.setCompanyId(companyId);
+        role.setName(roleName);
+        role.setRemark("系统自动分配");
+        appRoleMapper.insert(role);
+        return role.getId();
+    }
+    
+    /**
+     * 动态绑定权限
+     */
+    private void bindPermissions(Long roleId, Map<String, Long> codeToIdMap, AppPermissionCode... codes) {
+        if (codes == null || codes.length == 0) return;
+        
+        List<AppRolePermission> bindings = new ArrayList<>();
+        for (AppPermissionCode enumCode : codes) {
+            // 通过枚举中的 String code，去 Map 里获取数据库真实的 ID
+            Long permissionId = codeToIdMap.get(enumCode.getCode());
+            if (permissionId != null) {
+                AppRolePermission rp = new AppRolePermission();
+                rp.setRoleId(roleId);
+                rp.setPermissionId(permissionId);
+                bindings.add(rp);
+            }
+        }
+        
+        // 批量插入关联表
+        for (AppRolePermission binding : bindings) {
+            appRolePermissionMapper.insert(binding);
+        }
     }
     
 }

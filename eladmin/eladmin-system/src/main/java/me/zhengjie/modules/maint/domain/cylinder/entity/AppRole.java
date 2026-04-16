@@ -20,6 +20,9 @@ public class AppRole {
     @Schema(description = "企业ID")
     private Long companyId;
     
+    @Schema(description = "备注")
+    private String remark;
+    
     @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
