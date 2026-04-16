@@ -13,6 +13,7 @@
 package me.zhengjie.modules.maint.domain.cylinder;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -23,10 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.*;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.*;
-import me.zhengjie.modules.maint.domain.dto.CylinderDetailDto;
-import me.zhengjie.modules.maint.domain.dto.CylinderFillDto;
-import me.zhengjie.modules.maint.domain.dto.CylinderFlowDto;
-import me.zhengjie.modules.maint.domain.dto.CylinderPageDto;
+import me.zhengjie.modules.maint.domain.dto.*;
 import me.zhengjie.modules.maint.domain.enums.*;
 import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
 import me.zhengjie.modules.maint.util.RfidParserUtil;
@@ -733,6 +731,154 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         dto.setTimeline(timeline);
         
         return dto;
+    }
+    
+    /**
+     * ================= 私有前置风控：核心资产安全校验 =================
+     */
+    private Cylinder checkAndGetMyCylinder(String qrcode, String actionName) {
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        
+        // 1. 物理档案存在性校验
+        Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
+                .eq(Cylinder::getCode, qrcode));
+        if (cylinder == null) {
+            throw new BusinessException(404, "未找到该气瓶信息，请核对二维码！");
+        }
+        
+        // 2. 产权与控制权绝对隔离 (防止 A 站的员工扫了 B 站的瓶子进行年检/报废)
+        if (!cylinder.getCurrentCompanyId().equals(myCompanyId)) {
+            throw new BusinessException(403, "产权异常：该气瓶当前控制权不在本单位，禁止【" + actionName + "】！");
+        }
+        
+        // 3. 终结状态防呆拦截
+        if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.SCRAP)) {
+            throw new BusinessException(400, "操作驳回：该气瓶已处于【彻底报废】状态，禁止任何后续操作！");
+        }
+        
+        return cylinder;
+    }
+    
+    /**
+     * 构建包含图片证据的详细备注 (工业级溯源必备)
+     */
+    private String buildEvidenceRemark(String baseMsg, CylinderOperateDto dto) {
+        StringBuilder sb = new StringBuilder(baseMsg);
+        if (StrUtil.isNotBlank(dto.getRemarks())) {
+            sb.append(" | 附加说明: ").append(dto.getRemarks());
+        }
+        if (CollUtil.isNotEmpty(dto.getImageUrls())) {
+            sb.append(" | 证据附件: ").append(dto.getImageUrls().size()).append("张图");
+        }
+        return sb.toString();
+    }
+    
+    
+    /**
+     * ================= 扫码年检 (特检业务) =================
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void inspectCylinder(CylinderOperateDto dto) {
+        Long myUserId = SecurityUtils.getUserId();
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        Date today = new Date();
+        
+        // 1. 极限风控校验 (调用私有辅助方法)
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "年检");
+        
+        // 2. 构造溯源备注
+        String remark = buildEvidenceRemark("年度检验合格", dto);
+        
+        // 3. 记录多维流水追踪 (与 fillCylinder 保持同样的高规格架构)
+        recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.INSPECTION.getCode());
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 5, myUserId, remark);
+        recordOperationLog(OperationType.INSPECTION, TargetType.CYLINDER, cylinder.getId());
+        recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.INSPECT, remark, AccountType.APP);
+        
+        // 4. 更新主表状态：移交控制权、刷新有效期
+        Cylinder updateObj = new Cylinder();
+        updateObj.setId(cylinder.getId());
+        updateObj.setCurrentStatus(CylinderStatus.IN_STOCK); // 无论之前是待检还是流转，年检完统统变回【在库】
+        updateObj.setLastInspectionTime(today);
+        updateObj.setLastFlowId(flowId);
+        
+        // 核心：刷新下次检验日期 (传了就用传的，没传默认顺延48个月)
+        if (dto.getNextInspectionDate() != null) {
+            updateObj.setNextInspectionDate(dto.getNextInspectionDate());
+        } else {
+            updateObj.setNextInspectionDate(DateUtil.offsetMonth(today, 48));
+        }
+        
+        this.baseMapper.updateById(updateObj);
+    }
+    
+    
+    /**
+     * ================= 扫码报废 (资产终结) =================
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void scrapCylinder(CylinderOperateDto dto) {
+        Long myUserId = SecurityUtils.getUserId();
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        
+        // 1. 极限风控校验
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "破坏性报废");
+        
+        // 强制要求报废必须有照片或说明
+        if (StrUtil.isBlank(dto.getRemarks()) && CollUtil.isEmpty(dto.getImageUrls())) {
+            throw new BusinessException(400, "合规要求：气瓶报废必须填写原因或上传破坏性销毁照片！");
+        }
+        
+        // 2. 构造溯源备注
+        String remark = buildEvidenceRemark("执行破坏性报废", dto);
+        
+        // 3. 记录流水追踪
+        recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.SCRAP.getCode());
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 6, myUserId, remark);
+        recordOperationLog(OperationType.SCRAP, TargetType.CYLINDER, cylinder.getId());
+        recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.SCRAP, remark, AccountType.APP);
+        
+        // 4. 更新主表：【彻底死亡】
+        Cylinder updateObj = new Cylinder();
+        updateObj.setId(cylinder.getId());
+        updateObj.setCurrentStatus(CylinderStatus.SCRAP); // 锁定为终结状态
+        updateObj.setLastFlowId(flowId);
+        
+        this.baseMapper.updateById(updateObj);
+    }
+    
+    
+    /**
+     * ================= 扫码维修 =================
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void repairCylinder(CylinderOperateDto dto) {
+        Long myUserId = SecurityUtils.getUserId();
+        Long myCompanyId = SecurityUtils.getCompanyId();
+        
+        // 1. 极限风控校验
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "维修登记");
+        
+        // 2. 构造溯源备注
+        StringBuilder baseMsg = new StringBuilder("维修完成");
+        if (dto.getRepairCost() != null && dto.getRepairCost() > 0) {
+            baseMsg.append("，产生费用: ").append(dto.getRepairCost()).append("元");
+        }
+        String remark = buildEvidenceRemark(baseMsg.toString(), dto);
+        
+        // 3. 记录流水追踪
+        recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.REPAIR.getCode());
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 7, myUserId, remark);
+        recordOperationLog(OperationType.REPAIR, TargetType.CYLINDER, cylinder.getId());
+        recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.REPAIR, remark, AccountType.APP);
+        
+        // 4. 更新主表：恢复健康状态
+        Cylinder updateObj = new Cylinder();
+        updateObj.setId(cylinder.getId());
+        updateObj.setCurrentStatus(CylinderStatus.IN_STOCK); // 维修好之后，回归正常库存
+        updateObj.setLastFlowId(flowId);
+        
+        this.baseMapper.updateById(updateObj);
     }
     
     

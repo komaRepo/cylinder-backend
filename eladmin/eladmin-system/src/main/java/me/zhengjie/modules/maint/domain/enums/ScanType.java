@@ -11,7 +11,10 @@ public enum ScanType {
     OUTBOUND(2, "出库"),
     INBOUND(3, "入库"),
     FILL(4, "充装"),
-    INSPECTION(5, "年检");
+    INSPECTION(5, "年检"),
+    REPAIR(6, "维修"),
+    SCRAP(7, "报废"),
+    ;
 
     private final int code;
     private final String name;
