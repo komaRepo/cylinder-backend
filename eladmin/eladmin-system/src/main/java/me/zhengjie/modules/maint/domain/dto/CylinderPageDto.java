@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -19,7 +20,13 @@ public class CylinderPageDto {
     // 核心翻译字段！
     private Long currentCompanyId;
     @Schema(description = "当前所属企业名称")
-    private String currentCompanyName; 
+    private String currentCompanyName;
+    
+    @Schema(description = "当前所在企业经度")
+    private BigDecimal currentLongitude;
+    
+    @Schema(description = "当前所在企业纬度")
+    private BigDecimal currentLatitude;
     
     private Long manufacturerId;
     @Schema(description = "制造商名称")

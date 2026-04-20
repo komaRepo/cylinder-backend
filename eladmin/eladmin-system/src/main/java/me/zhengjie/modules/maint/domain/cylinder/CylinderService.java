@@ -485,9 +485,9 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     
     
     /**
-     * 管理端查询气瓶数据
-     * @param req
-     * @return
+     * 管理端查询气瓶数据（含坐标回显）
+     * @param req 查询参数
+     * @return 分页结果
      */
     public PageResult<CylinderPageDto> queryCylinderPage(CylinderQueryReq req) {
         // ==========================================
@@ -500,13 +500,13 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         LambdaQueryWrapper<Cylinder> wrapper = new LambdaQueryWrapper<>();
         
-        // 如果不是制造商管理员，必须把查询范围死死锁在【本企业】及其下属机构
-        if (!isAdmin || !isManufacturer) {
-            // 这里有两种策略，最严谨的是：当前在我手里的，或者 ownerPath 包含我企业的
+        // 如果不是制造商且不是超级管理员，必须把查询范围死死锁在【本企业】及其下属机构
+        if (!isAdmin && !isManufacturer) {
+            // 最严谨的策略：当前在我手里的，或者 ownerPath 包含我企业的
             wrapper.and(w -> w.eq(Cylinder::getCurrentCompanyId, myCompanyId)
                               .or()
                               .like(Cylinder::getOwnerPath, "," + myCompanyId + ","));
-        } else {
+        } else if (isAdmin) {
             // 超级管理员可以通过前端下拉框筛选指定企业
             if (req.getCurrentCompanyId() != null) {
                 wrapper.eq(Cylinder::getCurrentCompanyId, req.getCurrentCompanyId());
@@ -555,7 +555,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         }
         
         // ==========================================
-        // 4. 【高阶技巧：内存中批量翻译企业名称，拒绝 N+1】
+        // 4. 🚀 【高阶技巧：内存中批量查询企业全量信息（拿名称和坐标）】
         // ==========================================
         // 提取当前页所有涉及到的 企业ID (包括 currentCompanyId 和 manufacturerId)
         Set<Long> companyIds = new HashSet<>();
@@ -564,29 +564,42 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
             if (c.getManufacturerId() != null) companyIds.add(c.getManufacturerId());
         });
         
-        // IN 查询一次性把本页涉及到的企业全部查出来，转为 Map
-        Map<Long, String> companyNameMap = new HashMap<>();
+        // IN 查询一次性把本页涉及到的企业全部查出来，转为 Map<企业ID, 企业对象实体>
+        Map<Long, Company> companyMap = new HashMap<>();
         if (CollUtil.isNotEmpty(companyIds)) {
             List<Company> companies = companyMapper.selectList(
                     new LambdaQueryWrapper<Company>()
                             .in(Company::getId, companyIds)
-                            .select(Company::getId, Company::getName) // 性能优化：只查 ID 和 Name
+                            // 性能优化：只查我们需要用到的字段 (ID, 名称, 经度, 纬度)
+                            .select(Company::getId, Company::getName, Company::getLongitude, Company::getLatitude)
             );
-            companyNameMap = companies.stream()
-                                      .collect(Collectors.toMap(Company::getId, Company::getName));
+            // 将 List 转为 Map，Key是ID，Value是Company对象本身 (c -> c)
+            companyMap = companies.stream()
+                                  .collect(Collectors.toMap(Company::getId, c -> c));
         }
         
         // ==========================================
-        // 5. 组装最终 DTO 列表
+        // 5. 🚀 组装最终 DTO 列表 (附加坐标字段)
         // ==========================================
-        Map<Long, String> finalCompanyNameMap = companyNameMap;
+        Map<Long, Company> finalCompanyMap = companyMap;
         List<CylinderPageDto> dtoList = records.stream().map(cylinder -> {
             CylinderPageDto dto = new CylinderPageDto();
             BeanUtils.copyProperties(cylinder, dto);
             
-            // 从 Map 中极速回显名称
-            dto.setCurrentCompanyName(finalCompanyNameMap.get(cylinder.getCurrentCompanyId()));
-            dto.setManufacturerName(finalCompanyNameMap.get(cylinder.getManufacturerId()));
+            // 5.1 获取当前所属企业的信息，并填充名称和经纬度坐标
+            Company currentCompany = finalCompanyMap.get(cylinder.getCurrentCompanyId());
+            if (currentCompany != null) {
+                dto.setCurrentCompanyName(currentCompany.getName());
+                // 顺带把坐标赋予气瓶 DTO，供给前端画大屏地图使用！
+                dto.setCurrentLongitude(currentCompany.getLongitude());
+                dto.setCurrentLatitude(currentCompany.getLatitude());
+            }
+            
+            // 5.2 获取制造商名称（制造商一般不需要坐标，只需名字即可回显）
+            Company manufacturer = finalCompanyMap.get(cylinder.getManufacturerId());
+            if (manufacturer != null) {
+                dto.setManufacturerName(manufacturer.getName());
+            }
             
             return dto;
         }).collect(Collectors.toList());

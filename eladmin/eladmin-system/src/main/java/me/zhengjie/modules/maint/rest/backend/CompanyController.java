@@ -75,7 +75,9 @@ public class CompanyController {
                 cmd.getBusinessLicense(),
                 cmd.getDangerBusinessLicense(),
                 cmd.getCylinderFillLicense(),
-                cmd.getSpecialEquipmentLicense());
+                cmd.getSpecialEquipmentLicense(),
+                cmd.getLongitude(),
+                cmd.getLatitude());
         return ResponseResult.success(Boolean.TRUE);
     }
     

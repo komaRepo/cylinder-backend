@@ -53,7 +53,7 @@ public class CylinderController {
      */
     @ApiOperation("制造商：批量导入气瓶 RFID 标签")
     @PostMapping("/import")
-    // @PreAuthorize("@el.check('app:cylinder:produce')")
+    // @PreAuthorize("@el.check('app:cylinder:import')")
     public ResponseResult<String> importCylinders(@RequestParam("file") MultipartFile file) {
         try {
             // 使用 EasyExcel 同步读取所有数据到内存 (1万条数据约几兆，内存完全无压力)

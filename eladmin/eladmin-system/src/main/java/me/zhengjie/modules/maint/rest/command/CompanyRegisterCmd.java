@@ -17,6 +17,7 @@ import me.zhengjie.modules.maint.domain.enums.CompanyType;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
 
 /**
  * 企业注册信息
@@ -63,6 +64,10 @@ public class CompanyRegisterCmd {
     
     @NotBlank(message = "详细地址不能为空")
     private String address;
+    
+    private BigDecimal longitude;
+    
+    private BigDecimal latitude;
     
     /** 上级机构 */
     private Long parentId;

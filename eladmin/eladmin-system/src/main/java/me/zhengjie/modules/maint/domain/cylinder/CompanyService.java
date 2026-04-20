@@ -30,6 +30,7 @@ import me.zhengjie.modules.maint.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +53,8 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
     public void register(CompanyType type, String name, String creditCode, String code, String legalName,
                          String legalCode, String contactName, String contactPhone, String countryCode, String province,
                          String city, String district, String address, Long parentId, String businessLicense,
-                         String dangerBusinessLicense, String cylinderFillLicense, String specialEquipmentLicense) {
+                         String dangerBusinessLicense, String cylinderFillLicense, String specialEquipmentLicense,
+                         BigDecimal longitude, BigDecimal latitude) {
         
         // 1. 参数校验
         _checkParam(type, name, creditCode, legalName, legalCode, province, city, district, businessLicense, dangerBusinessLicense, cylinderFillLicense, specialEquipmentLicense);
@@ -71,6 +73,8 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         company.setCity(city);
         company.setDistrict(district);
         company.setAddress(address);
+        company.setLatitude(latitude);
+        company.setLongitude(longitude);
         // 注意：如果前端传了 null，这里给个默认值 0，代表它是顶级节点
         company.setParentId(parentId != null ? parentId : 0L);
         company.setStatus(CompanyStatus.INACTIVE); // 默认待审核状态

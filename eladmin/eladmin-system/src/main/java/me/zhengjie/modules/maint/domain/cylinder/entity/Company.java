@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -62,6 +63,12 @@ public class Company {
     
     @Schema(description = "详细地址")
     private String address;
+    
+    @Schema(description = "经度")
+    private BigDecimal longitude;
+    
+    @Schema(description = "纬度")
+    private BigDecimal latitude;
     
     @Schema(description = "联系人")
     private String contact;

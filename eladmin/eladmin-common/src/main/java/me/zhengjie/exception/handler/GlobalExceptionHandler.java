@@ -29,7 +29,11 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import javax.servlet.http.HttpServletRequest;
+
 import static org.springframework.http.HttpStatus.*;
 
 /**
@@ -51,11 +55,15 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * 拦截我们自己抛出的业务异常
+     * 拦截我们自定义的业务异常 (BusinessException)
      */
-    @ExceptionHandler(value = BusinessException.class)
-    public ResponseResult<?> handleBusinessException(BusinessException e) {
-        log.warn("业务异常: {}", e.getMessage());
+    @ExceptionHandler(BusinessException.class)
+    @ResponseStatus(HttpStatus.OK) // 🚀 核心关键：强制让 HTTP 响应状态码永远为 200！
+    public ResponseResult<Object> handleBusinessException(BusinessException e, HttpServletRequest request) {
+        // 打印日志，方便后端排查问题 (建议只打印 message，如果是严重 bug 可以打印堆栈 e)
+        log.warn("业务异常拦截 [URI: {}] - 错误码: {}, 错误信息: {}", request.getRequestURI(), e.getCode(), e.getMessage());
+        
+        // 🚀 将异常中的 code 和 message 提取出来，塞进统一的 JSON 结构体中返回给前端
         return ResponseResult.error(e.getCode(), e.getMessage());
     }
 

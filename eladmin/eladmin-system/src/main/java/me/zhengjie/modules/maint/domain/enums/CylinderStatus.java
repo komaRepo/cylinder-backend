@@ -28,8 +28,10 @@ public enum CylinderStatus {
     PRODUCED(0, "已建档"),   // 刚贴签，还没正式入库
     IN_STOCK(1, "在库"),     // 静静地躺在仓库里
     TRANSIT(2, "运输/流转中"),// 出库了，但对方还没扫码接收
-    WAIT_INSPECT(3, "待检/维修"), // 过期或损坏，被强制锁定
-    SCRAP(4, "已报废");      // 彻底死亡，不可再用
+    WAIT_INSPECT(3, "待检"), // 过期未年检
+    SCRAP(4, "已报废"),      // 彻底死亡，不可再用
+    FAULT(5, "故障"),      // 有故障
+    ;
     
     @EnumValue
     private final int code;
