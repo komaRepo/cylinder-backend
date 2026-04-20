@@ -20,6 +20,7 @@ import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppPermission;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppPermissionMapper;
 import me.zhengjie.modules.maint.domain.dto.AppPermissionSaveDto;
+import me.zhengjie.sys.ResultCodeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +52,7 @@ public class AppPermissionService extends ServiceImpl<AppPermissionMapper, AppPe
         }
         
         if (this.baseMapper.selectCount(checkWrapper) > 0) {
-            throw new BusinessException(400, "该权限代码 [" + dto.getCode() + "] 已存在，请勿重复添加！");
+            throw new BusinessException(ResultCodeEnum.PERMISSION_CODE_EXISTS);
         }
         
         // 执行保存或更新

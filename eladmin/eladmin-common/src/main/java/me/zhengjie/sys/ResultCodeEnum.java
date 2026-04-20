@@ -29,6 +29,17 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     LEAPFROG_OPERATION(1007, "越权操作！您只能将账号绑定到【本企业】或【直接下级企业】名下"),
     ACCOUNT_STATUS_ERROR(1008, "您当前的账号为非正常状态，无法执行该操作"),
     PASSWORD_VERIFY_ERROR(1009, "新密码不能与旧密码相同"),
+    ROLE_ASSIGN_FORBIDDEN(1010, "只能为本企业的员工分配角色"),
+    INVALID_ROLE_ASSIGN(1011, "包含非法或不属于本企业的角色，授权失败"),
+    ROLE_MODIFY_FORBIDDEN(1012, "无权修改该角色"),
+    PERMISSION_CODE_EXISTS(1013, "该权限代码已存在，请勿重复添加"),
+    PARENT_COMPANY_NOT_EXIST(1014, "指定的上级企业不存在，请检查数据"),
+    PHONE_ALREADY_REGISTERED(1015, "该手机号已被注册"),
+    USERNAME_ALREADY_TAKEN(1016, "该用户名已被占用"),
+    COMPANY_DISABLED(1017, "所选企业当前处于禁用状态，无法注册"),
+    USER_NOT_FOUND(1018, "该用户不存在"),
+    ACCOUNT_NOT_PENDING(1019, "该账号不是待激活状态，无法执行此操作"),
+    ACTIVATE_OTHER_COMPANY_FORBIDDEN(1020, "严重警告：您无权激活其他企业的员工账号！"),
 
     // ========== 气瓶与流转业务异常 (2000段) ==========
     CYLINDER_NOT_FOUND(2001, "未查询到该气瓶信息"),
@@ -40,3 +51,4 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     private final Integer code;
     private final String message;
 }
+

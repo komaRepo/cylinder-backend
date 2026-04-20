@@ -26,6 +26,7 @@ import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserRoleMapper;
 import me.zhengjie.modules.maint.domain.dto.AppUserRoleBindDto;
 import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.sys.ResultCodeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class AppUserRoleService extends ServiceImpl<AppUserRoleMapper, AppUserRo
         // 1. 校验目标员工是否存在且属于本企业
         AppUser targetUser = appUserMapper.selectById(dto.getUserId());
         if (targetUser == null || !targetUser.getCompanyId().equals(myAdminCompanyId)) {
-            throw new BusinessException(403, "只能为本企业的员工分配角色");
+            throw new BusinessException(ResultCodeEnum.ROLE_ASSIGN_FORBIDDEN);
         }
         
         // 2. 校验传入的 roleIds 是否合法（防止黑客传入别的企业的顶级角色ID）
@@ -63,7 +64,7 @@ public class AppUserRoleService extends ServiceImpl<AppUserRoleMapper, AppUserRo
                     .eq(AppRole::getCompanyId, myAdminCompanyId));
             
             if (validRoleCount != dto.getRoleIds().size()) {
-                throw new BusinessException(403, "包含非法或不属于本企业的角色，授权失败");
+                throw new BusinessException(ResultCodeEnum.INVALID_ROLE_ASSIGN);
             }
         }
         

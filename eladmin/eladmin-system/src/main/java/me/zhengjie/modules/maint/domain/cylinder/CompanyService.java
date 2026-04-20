@@ -27,6 +27,7 @@ import me.zhengjie.modules.maint.domain.dto.CompanyVo;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.sys.ResultCodeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -101,7 +102,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
             Company parent = this.baseMapper.selectById(parentId);
             // 防御性编程：防止前端传了一个不存在的上级 ID
             if (parent == null) {
-                throw new BusinessException(400, "指定的上级企业不存在，请检查数据！");
+                throw new BusinessException(ResultCodeEnum.PARENT_COMPANY_NOT_EXIST);
             }
             // 拼接路径：上级路径 + 自己的ID + 逗号
             path = parent.getPath().concat(company.getId().toString()).concat(",");

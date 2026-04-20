@@ -91,14 +91,14 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         Long phoneCount = this.baseMapper.selectCount(new LambdaQueryWrapper<AppUser>()
                 .eq(AppUser::getPhone, phone));
         if (phoneCount > 0) {
-            throw new BusinessException(400, "该手机号已被注册");
+            throw new BusinessException(ResultCodeEnum.PHONE_ALREADY_REGISTERED);
         }
         
         // 2. 校验用户名是否已被注册（登录账号通常要求唯一）
         Long usernameCount = this.baseMapper.selectCount(new LambdaQueryWrapper<AppUser>()
                 .eq(AppUser::getUsername, username));
         if (usernameCount > 0) {
-            throw new BusinessException(400, "该用户名已被占用");
+            throw new BusinessException(ResultCodeEnum.USERNAME_ALREADY_TAKEN);
         }
         
         // 3. 校验企业是否存在且状态正常 (防前端乱传 companyId)
@@ -107,7 +107,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
             throw new BusinessException(400, "所选企业不存在");
         }
         if (ObjectUtil.notEqual(CompanyStatus.INACTIVE, company.getStatus())) {
-            throw new BusinessException(400, "所选企业当前处于禁用状态，无法注册");
+            throw new BusinessException(ResultCodeEnum.COMPANY_DISABLED);
         }
         
         // 4. 构建用户实体并落库
@@ -262,17 +262,17 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         // 2. 查询目标待激活的用户
         AppUser targetUser = this.baseMapper.selectById(targetUserId);
         if (targetUser == null) {
-            throw new BusinessException(404, "该用户不存在");
+            throw new BusinessException(ResultCodeEnum.USER_NOT_FOUND);
         }
         
         // 3. 状态校验：防重复点击 (必须是“待激活”状态才能被激活)
         if (!ObjectUtil.equals(targetUser.getStatus(), UserStatus.ACTIVE)) {
-            throw new BusinessException(400, "该账号不是待激活状态，无法执行此操作");
+            throw new BusinessException(ResultCodeEnum.ACCOUNT_NOT_PENDING);
         }
         
         // 4. 【绝对核心防线：防越权漏洞】
         if (!targetUser.getCompanyId().equals(myAdminCompanyId)) {
-            throw new BusinessException(403, "严重警告：您无权激活其他企业的员工账号！");
+            throw new BusinessException(ResultCodeEnum.ACTIVATE_OTHER_COMPANY_FORBIDDEN);
         }
         
         // 5. 执行激活更新操作

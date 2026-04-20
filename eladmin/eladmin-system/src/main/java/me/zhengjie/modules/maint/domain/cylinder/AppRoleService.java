@@ -31,6 +31,7 @@ import me.zhengjie.modules.maint.domain.enums.AppPermissionCode;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.rest.command.PageQueryReq;
 import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.sys.ResultCodeEnum;
 import me.zhengjie.utils.PageResult;
 import me.zhengjie.utils.PageUtil;
 import org.springframework.beans.BeanUtils;
@@ -76,7 +77,7 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
             // 2. 修改角色 (防越权校验：只能修改自己公司的角色)
             AppRole oldRole = this.baseMapper.selectById(dto.getId());
             if (oldRole == null || !oldRole.getCompanyId().equals(myAdminCompanyId)) {
-                throw new BusinessException(403, "无权修改该角色");
+                throw new BusinessException(ResultCodeEnum.ROLE_MODIFY_FORBIDDEN);
             }
             role.setId(dto.getId());
             this.baseMapper.updateById(role);
