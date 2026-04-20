@@ -3,6 +3,8 @@ package me.zhengjie.modules.maint.domain.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * 仪表盘可视化传输对象大宽表
  */
@@ -22,17 +24,23 @@ public class DashboardDto {
         // private Integer inspectionCount; 
         // private Integer outCount;
     }
-
+    
     @Data
-    @Schema(description = "全国/全省热力地图标准结构")
+    @Schema(description = "地图企业分布点位 DTO")
     public static class MapChartDto {
-        @Schema(description = "区域名称 (如: '广东', '北京')")
+        @Schema(description = "企业名称")
         private String name;
         
-        @Schema(description = "区域代码 (如: '440000' 代表广东省)")
+        @Schema(description = "企业 ID (作为唯一标识)")
         private String code;
-
-        @Schema(description = "分布数量")
+        
+        @Schema(description = "在库气瓶数量")
         private Integer value;
+        
+        @Schema(description = "经度")
+        private BigDecimal lng;
+        
+        @Schema(description = "纬度")
+        private BigDecimal lat;
     }
 }

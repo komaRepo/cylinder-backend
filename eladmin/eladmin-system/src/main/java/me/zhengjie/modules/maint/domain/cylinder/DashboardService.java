@@ -3,6 +3,7 @@ package me.zhengjie.modules.maint.domain.cylinder;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -312,46 +313,69 @@ public class DashboardService {
     public List<DashboardDto.MapChartDto> getDynamicRegionalDistributionMap(DashboardQueryDto.MapReq req) {
         JwtUserDto currentUser = SecurityUtils.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
+        // 🔒 依然遵循你要求的权限维度：只能看本级和下级
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
         
-        QueryWrapper<CylinderDistributionStats> query = new QueryWrapper<>();
-        query.select("province", "SUM(total_count) as totalCount");
+        // 1. 在气瓶主表中统计各企业“在库”气瓶数量
+        QueryWrapper<Cylinder> query = new QueryWrapper<>();
+        query.select("current_company_id as currentCompanyId", "COUNT(id) as id") // 借用 id 字段接收 count 值
+             .eq("current_status", CylinderStatus.IN_STOCK); // 👈 只统计在库状态
         
         if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-            query.in("company_id", accessibleIds); // 👈 替换为 IN
+            query.in("current_company_id", accessibleIds);
         }
-        query.groupBy("province");
         
+        query.groupBy("current_company_id");
+        
+        // 排序逻辑调整为按气瓶数量排序
         if ("ASC".equalsIgnoreCase(req.getSort())) {
-            query.orderByAsc("SUM(total_count)");
+            query.orderByAsc("COUNT(id)");
         } else {
-            query.orderByDesc("SUM(total_count)");
+            query.orderByDesc("COUNT(id)");
         }
+        
         if (req.getLimit() != null && req.getLimit() > 0) {
             query.last("LIMIT " + req.getLimit());
         }
         
-        List<CylinderDistributionStats> dbStats = distributionStatsMapper.selectList(query);
+        // 执行统计查询
+        List<Cylinder> stats = cylinderMapper.selectList(query);
         List<DashboardDto.MapChartDto> result = new ArrayList<>();
         
-        if (CollUtil.isNotEmpty(dbStats)) {
-            for (CylinderDistributionStats stat : dbStats) {
-                // 这里的 stat.getProvince() 取出来的是数据库原貌，通常是 "广东省"
-                String originalProvinceName = stat.getProvince();
-                if (originalProvinceName == null) continue;
+        if (CollUtil.isNotEmpty(stats)) {
+            // 2. 批量提取涉及到的企业 ID，准备翻译名称和坐标
+            Set<Long> companyIds = stats.stream()
+                                        .map(Cylinder::getCurrentCompanyId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet());
+            
+            // 3. 一次性查询企业档案中的坐标和名称
+            Map<Long, Company> companyMap = new HashMap<>();
+            if (CollUtil.isNotEmpty(companyIds)) {
+                List<Company> companies = companyMapper.selectList(
+                        new LambdaQueryWrapper<Company>()
+                                .in(Company::getId, companyIds)
+                                .select(Company::getId, Company::getName, Company::getLongitude, Company::getLatitude)
+                );
+                companyMap = companies.stream().collect(Collectors.toMap(Company::getId, c -> c));
+            }
+            
+            // 4. 组装最终返回给前端的地图点位数据
+            for (Cylinder stat : stats) {
+                Company comp = companyMap.get(stat.getCurrentCompanyId());
+                if (comp == null || comp.getLongitude() == null) continue; // 没坐标的企业不显示在地图上
                 
                 DashboardDto.MapChartDto dto = new DashboardDto.MapChartDto();
-                dto.setCode(regionLocalService.getProvinceCodeByName(originalProvinceName));
+                dto.setName(comp.getName());
+                dto.setCode(comp.getId().toString());
+                dto.setValue(stat.getId().intValue()); // 这里的 id 存的是 count(*) 的结果
+                dto.setLng(comp.getLongitude());
+                dto.setLat(comp.getLatitude());
                 
-                String cleanName = stat.getProvince()
-                                       .replace("省", "").replace("市", "").replace("自治区", "")
-                                       .replace("回族", "").replace("维吾尔", "").replace("壮族", "");
-                
-                dto.setName(cleanName);
-                dto.setValue(stat.getTotalCount() != null ? stat.getTotalCount() : 0);
                 result.add(dto);
             }
         }
+        
         return result;
     }
     
