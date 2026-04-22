@@ -28,7 +28,7 @@ import me.zhengjie.modules.maint.domain.dto.AppRoleDetailDto;
 import me.zhengjie.modules.maint.domain.dto.AppRoleSaveDto;
 import me.zhengjie.modules.maint.domain.dto.AppUserRoleBindDto;
 import me.zhengjie.modules.maint.rest.command.PageQueryReq;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResponseResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -87,7 +87,7 @@ public class AppRbacController {
     // @PreAuthorize("@el.check('appRole:list')")
     public ResponseResult<PageResult<AppRoleDetailDto>> listRoles(@RequestBody PageQueryReq req) {
         // 获取当前登录人的所属企业
-        Long companyId = SecurityUtils.getCompanyId();
+        Long companyId = SecurityContext.getCompanyId();
         PageResult<AppRoleDetailDto> pageData = appRoleService.listRolesWithPermissions(req, companyId);
         return ResponseResult.success(pageData);
     }
@@ -100,7 +100,7 @@ public class AppRbacController {
     // @PreAuthorize("@el.check('appRole:add', 'appRole:edit')")
     @Valid
     public ResponseResult<Boolean> saveRole(@RequestBody AppRoleSaveDto dto) {
-        Long companyId = SecurityUtils.getCompanyId();
+        Long companyId = SecurityContext.getCompanyId();
         dto.setCompanyId(companyId);
         appRoleService.saveOrUpdateRole(dto);
         return ResponseResult.success(Boolean.TRUE);

@@ -25,7 +25,7 @@ import me.zhengjie.modules.maint.domain.cylinder.mapper.AppRoleMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserRoleMapper;
 import me.zhengjie.modules.maint.domain.dto.AppUserRoleBindDto;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResultCodeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +49,7 @@ public class AppUserRoleService extends ServiceImpl<AppUserRoleMapper, AppUserRo
      */
     @Transactional(rollbackFor = Exception.class)
     public void bindUserRoles(AppUserRoleBindDto dto) {
-        Long myAdminCompanyId = SecurityUtils.getCompanyId();
+        Long myAdminCompanyId = SecurityContext.getCompanyId();
         
         // 1. 校验目标员工是否存在且属于本企业
         AppUser targetUser = appUserMapper.selectById(dto.getUserId());

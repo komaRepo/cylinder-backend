@@ -12,7 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 /**
  * 极简版获取当前登录用户上下文工具类
  */
-public class SecurityUtils {
+public class SecurityContext {
 
     /**
      * 获取当前登录的完整用户信息

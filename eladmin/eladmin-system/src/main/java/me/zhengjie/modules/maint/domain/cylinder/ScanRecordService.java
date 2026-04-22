@@ -20,7 +20,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.ScanRecord;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.ScanRecordMapper;
 import me.zhengjie.modules.maint.domain.dto.ScanRecordPageDto;
 import me.zhengjie.modules.maint.rest.command.ScanRecordQueryReq;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import org.springframework.stereotype.Service;
 
 /**
@@ -34,7 +34,7 @@ import org.springframework.stereotype.Service;
 public class ScanRecordService extends ServiceImpl<ScanRecordMapper, ScanRecord> {
 
     public Page<ScanRecordPageDto> pageQuery(ScanRecordQueryReq req) {
-        Long currentCompanyId = SecurityUtils.getCompanyId();
+        Long currentCompanyId = SecurityContext.getCompanyId();
         Page<ScanRecordPageDto> page = new Page<>(req.getPage(), req.getSize());
         return (Page<ScanRecordPageDto>) this.baseMapper.pageQuery(
                 page,

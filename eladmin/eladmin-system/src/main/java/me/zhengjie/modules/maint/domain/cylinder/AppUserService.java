@@ -31,7 +31,7 @@ import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.UserStatus;
 import me.zhengjie.modules.maint.domain.enums.UserType;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginReq;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.modules.security.config.SecurityProperties;
 import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.modules.security.service.OnlineUserService;
@@ -72,7 +72,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
      */
     public Page<AppUserDetail> fetchUserList(Long roleId, String username, String phone, UserStatus status,
                                              Date createTimeStart, Date createTimeEnd, Integer pageAt, Integer pageSize) {
-        Long companyId = SecurityUtils.getCompanyId();
+        Long companyId = SecurityContext.getCompanyId();
         if (companyId == null) {
             throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
         }
@@ -235,7 +235,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
      */
     public Page<AppUserDetail> getPendingPage(Integer current, Integer size) {
         
-        Long myAdminCompanyId = SecurityUtils.getCompanyId();
+        Long myAdminCompanyId = SecurityContext.getCompanyId();
         
         Page<AppUser> page = new Page<>(current, size);
         
@@ -256,8 +256,8 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
     @Transactional(rollbackFor = Exception.class)
     public void activateUser(Long targetUserId) {
         // 1. 拿当前管理员的信息
-        Long myAdminCompanyId = SecurityUtils.getCompanyId();
-        Long myAdminUserId = SecurityUtils.getUserId();
+        Long myAdminCompanyId = SecurityContext.getCompanyId();
+        Long myAdminUserId = SecurityContext.getUserId();
         
         // 2. 查询目标待激活的用户
         AppUser targetUser = this.baseMapper.selectById(targetUserId);
@@ -359,7 +359,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
      */
     public void changePwd(String oldPassword, String newPassword) {
         //获取当前用户
-        Long userId = SecurityUtils.getUserId();
+        Long userId = SecurityContext.getUserId();
         AppUser user = this.baseMapper.selectById(userId);
         
         if (!ObjectUtil.equals(user.getStatus(), UserStatus.INACTIVE)) {

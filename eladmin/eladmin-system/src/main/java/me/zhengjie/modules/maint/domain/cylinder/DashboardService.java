@@ -14,7 +14,7 @@ import me.zhengjie.modules.maint.domain.dto.DashboardDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardQueryDto;
 import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
 import me.zhengjie.modules.maint.domain.enums.ScanType;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import org.springframework.stereotype.Service;
 
@@ -64,7 +64,7 @@ public class DashboardService {
      * ==========================================
      */
     public DashboardDataDto.IndicatorCards getDashboardCards() {
-        JwtUserDto currentUser = SecurityUtils.getCurrentUser();
+        JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         boolean isFiller = Boolean.TRUE.equals(currentUser.getTypeFiller());
         
@@ -161,7 +161,7 @@ public class DashboardService {
      * ==========================================
      */
     public List<DashboardDataDto.StatusPieChart> getStatusPieChart() {
-        JwtUserDto currentUser = SecurityUtils.getCurrentUser();
+        JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
         
@@ -193,7 +193,7 @@ public class DashboardService {
      * ==========================================
      */
     public List<DashboardDataDto.KpiRankDto> getFillRanking() {
-        JwtUserDto currentUser = SecurityUtils.getCurrentUser();
+        JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
         
@@ -232,7 +232,7 @@ public class DashboardService {
      * ==========================================
      */
     public List<DashboardDataDto.EfficiencyDto> getAssetEfficiency() {
-        JwtUserDto currentUser = SecurityUtils.getCurrentUser();
+        JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
         
@@ -264,7 +264,7 @@ public class DashboardService {
      * ==========================================
      */
     public List<DashboardDto.TrendItemDto> getDynamicFillTrend(int days) {
-        JwtUserDto currentUser = SecurityUtils.getCurrentUser();
+        JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
         
@@ -311,7 +311,7 @@ public class DashboardService {
      * ==========================================
      */
     public List<DashboardDto.MapChartDto> getDynamicRegionalDistributionMap(DashboardQueryDto.MapReq req) {
-        JwtUserDto currentUser = SecurityUtils.getCurrentUser();
+        JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         // 🔒 依然遵循你要求的权限维度：只能看本级和下级
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);

@@ -46,7 +46,12 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     CYLINDER_STATUS_ERROR(2002, "当前气瓶状态异常，无法执行此操作"),
     NO_FILLING_PERMISSION(2003, "您所在的企业没有充气资质"),
     FLOW_NOT_MATCH(2004, "气瓶当前不在您所在企业名下，无法出库"),
-    QRCODE_INVALID(2005, "无效的气瓶二维码");
+    QRCODE_INVALID(2005, "无效的气瓶二维码"),
+    CYLINDER_FLOW_ERROR(2006, "该企业没有权限执行此气瓶流转操作"),
+    
+    
+    
+    ;
 
     private final Integer code;
     private final String message;

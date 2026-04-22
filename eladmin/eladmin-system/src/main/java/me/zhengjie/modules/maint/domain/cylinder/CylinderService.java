@@ -28,9 +28,10 @@ import me.zhengjie.modules.maint.domain.dto.*;
 import me.zhengjie.modules.maint.domain.enums.*;
 import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
 import me.zhengjie.modules.maint.util.RfidParserUtil;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.mapper.UserMapper;
+import me.zhengjie.sys.ResultCodeEnum;
 import me.zhengjie.utils.PageResult;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -70,9 +71,9 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public int batchImportProduce(List<String> rawDataList) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
-        String myCompanyPath = SecurityUtils.getCompanyPath();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
+        String myCompanyPath = SecurityContext.getCompanyPath();
         
         // 1. 获取当前企业信息，用于校验监管码
         Company myCompany = companyMapper.selectById(myCompanyId);
@@ -222,8 +223,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void scanOut(CylinderFlowDto dto) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 查出气瓶
         Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
@@ -275,15 +276,21 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void scanIn(CylinderFlowDto dto) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
-        String myCompanyPath = SecurityUtils.getCompanyPath();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
+        String myCompanyPath = SecurityContext.getCompanyPath();
         
         // 1. 查出气瓶
         Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
                 .eq(Cylinder::getCode, dto.getQrcode()));
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息！");
+        }
+        
+        //查询最后一次流转记录,判断当前人员是否
+        CylinderFlow cylinderFlow = cylinderFlowMapper.selectById(cylinder.getLastFlowId());
+        if (!ObjectUtil.equals(dto.getTargetCompanyId(), cylinderFlow.getToCompanyId())) {
+            throw new BusinessException(ResultCodeEnum.CYLINDER_FLOW_ERROR);
         }
         
         // 2. 防呆设计：如果已经在我的库里了，直接提示成功，防止重复扫码报错
@@ -358,11 +365,11 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void fillCylinder(CylinderFillDto dto) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 获取当前安全上下文，再次硬性校验企业资质
-        if (SecurityUtils.getCurrentUser().getTypeFiller() != 1) {
+        if (SecurityContext.getCurrentUser().getTypeFiller() != 1) {
             throw new BusinessException(403, "严重违规：您所在的企业没有【充装资质】，禁止充气！");
         }
         
@@ -449,7 +456,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         lifecycle.setCylinderId(cylinderId);
         lifecycle.setEventType(eventEnum);
         lifecycle.setCompanyId(companyId);
-        lifecycle.setOperatorId(SecurityUtils.getUserId());
+        lifecycle.setOperatorId(SecurityContext.getUserId());
         lifecycle.setAccountType(accountType);
         lifecycle.setEventTime(new Date());
         lifecycle.setRemark(remark);
@@ -462,7 +469,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     private void recordOperationLog(OperationType operation, TargetType targetType, Long targetId) {
         OperationLog log = new OperationLog();
-        log.setUserId(SecurityUtils.getUserId());
+        log.setUserId(SecurityContext.getUserId());
         log.setOperation(operation);
         log.setTargetType(targetType);
         log.setTargetId(targetId);
@@ -493,8 +500,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 1. 【核心：数据权限隔离】
         // ==========================================
-        Long myCompanyId = SecurityUtils.getCompanyId();
-        Boolean isAdmin = SecurityUtils.getCurrentUser().getUser().getIsAdmin();
+        Long myCompanyId = SecurityContext.getCompanyId();
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Company company = companyMapper.selectById(myCompanyId);
         boolean isManufacturer = ObjectUtil.equals(company.getTypeManufacturer(), 1);// 是否制造商
         
@@ -622,8 +629,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
             throw new BusinessException(404, "未找到该气瓶档案！");
         }
         
-        Long myCompanyId = SecurityUtils.getCompanyId();
-        Boolean isAdmin = SecurityUtils.getCurrentUser().getUser().getIsAdmin();
+        Long myCompanyId = SecurityContext.getCompanyId();
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         
         // 极限防越权：如果你不是超级管理员，你只能看：
         // 1. 你自己造的瓶子 (manufacturerId)
@@ -750,7 +757,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      * ================= 私有前置风控：核心资产安全校验 =================
      */
     private Cylinder checkAndGetMyCylinder(String qrcode, String actionName) {
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 物理档案存在性校验
         Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
@@ -792,8 +799,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void inspectCylinder(CylinderOperateDto dto) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
         Date today = new Date();
         
         // 1. 极限风控校验 (调用私有辅助方法)
@@ -831,8 +838,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void scrapCylinder(CylinderOperateDto dto) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 极限风控校验
         Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "破坏性报废");
@@ -866,8 +873,8 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void repairCylinder(CylinderOperateDto dto) {
-        Long myUserId = SecurityUtils.getUserId();
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Long myUserId = SecurityContext.getUserId();
+        Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 极限风控校验
         Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "维修登记");

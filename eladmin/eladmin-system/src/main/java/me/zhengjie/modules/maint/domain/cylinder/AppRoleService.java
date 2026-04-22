@@ -30,7 +30,7 @@ import me.zhengjie.modules.maint.domain.dto.AppRoleSaveDto;
 import me.zhengjie.modules.maint.domain.enums.AppPermissionCode;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.rest.command.PageQueryReq;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResultCodeEnum;
 import me.zhengjie.utils.PageResult;
 import me.zhengjie.utils.PageUtil;
@@ -64,7 +64,7 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateRole(AppRoleSaveDto dto) {
-        Long myAdminCompanyId = SecurityUtils.getCompanyId();
+        Long myAdminCompanyId = SecurityContext.getCompanyId();
         
         AppRole role = new AppRole();
         role.setName(dto.getName());

@@ -21,7 +21,7 @@ import me.zhengjie.modules.maint.domain.cylinder.CompanyService;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.domain.dto.CompanyVo;
 import me.zhengjie.modules.maint.rest.command.QueryCompanyListReq;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResponseResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -61,7 +61,7 @@ public class CompanyApi {
     public ResponseResult<List<Company>> companyList(@RequestBody QueryCompanyListReq req) {
         log.info("query company list: {}", req);
         List<Company> list = companyService.companyList(req.getName(), req.getType(), req.getStatus());
-        list.removeIf(c -> c.getId().equals(SecurityUtils.getCompanyId()));
+        list.removeIf(c -> c.getId().equals(SecurityContext.getCompanyId()));
         return ResponseResult.success(list);
     }
     

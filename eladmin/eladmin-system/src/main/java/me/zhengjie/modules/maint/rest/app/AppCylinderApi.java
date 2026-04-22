@@ -20,6 +20,7 @@ import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
 import me.zhengjie.modules.maint.domain.dto.CylinderFillDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderFlowDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderOperateDto;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResponseResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,6 +70,8 @@ public class AppCylinderApi {
     @PreAuthorize("@el.check('app:cylinder:in')")
     @Valid
     public ResponseResult<Boolean> scanIn(@RequestBody CylinderFlowDto dto) {
+        Long companyId = SecurityContext.getCompanyId();
+        dto.setTargetCompanyId(companyId);
         cylinderService.scanIn(dto);
         return ResponseResult.success(Boolean.TRUE);
     }

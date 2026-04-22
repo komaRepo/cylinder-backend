@@ -21,7 +21,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.domain.cylinder.entity.SysUserCompany;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.SysUserCompanyMapper;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.modules.security.service.UserCacheManager;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.mapper.UserMapper;
@@ -47,8 +47,8 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
     @Transactional(rollbackFor = Exception.class)
     public void bind(Long targetUserId, Long targetCompanyId) {
         // 1. 获取当前正在操作的管理员的企业 ID 和超级管理员标识
-        Boolean isAdmin = SecurityUtils.getCurrentUser().getUser().getIsAdmin();
-        Long myCompanyId = SecurityUtils.getCompanyId();
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
+        Long myCompanyId = SecurityContext.getCompanyId();
         
         // 如果既不是超级管理员，又没有绑定过企业，直接阻断
         if (myCompanyId == null && !isAdmin) {
@@ -85,7 +85,7 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
         SysUserCompany binding = new SysUserCompany();
         binding.setUserId(targetUserId);
         binding.setCompanyId(targetCompanyId);
-        binding.setCreateBy(SecurityUtils.getCurrentUserName());
+        binding.setCreateBy(SecurityContext.getCurrentUserName());
         
         // 如果该账号之前绑过其他企业，这里会自动覆盖更新；如果没有，则插入新记录
         this.saveOrUpdate(binding);

@@ -26,7 +26,7 @@ import me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyMapper;
 import me.zhengjie.modules.maint.domain.dto.CompanyVo;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
-import me.zhengjie.modules.maint.util.SecurityUtils;
+import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResultCodeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -152,7 +152,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
      */
     public List<Company> companyList(String name, CompanyType type, CompanyStatus status) {
         // 1. 获取当前登陆用户的企业ID
-        Long currentCompanyId = SecurityUtils.getCompanyId();
+        Long currentCompanyId = SecurityContext.getCompanyId();
         
         LambdaQueryWrapper<Company> wrapper = new LambdaQueryWrapper<>();
         
