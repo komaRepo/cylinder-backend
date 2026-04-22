@@ -23,6 +23,7 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
 import me.zhengjie.modules.maint.rest.command.CompanyRegisterCmd;
 import me.zhengjie.modules.maint.rest.command.QueryCompanyListReq;
 import me.zhengjie.sys.ResponseResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -83,9 +84,9 @@ public class CompanyController {
     @ApiOperation("企业列表")
     @PostMapping("companyList")
     @Valid
-    public ResponseResult<Page<Company>> companyList(@RequestBody QueryCompanyListReq req) {
+    public ResponseResult<PageResult<Company>> companyList(@RequestBody QueryCompanyListReq req) {
         log.info("query company list: {}", req);
-        Page<Company> page = companyService.companyList(req.getName(), req.getType(), req.getStatus(), req.getPage(), req.getSize());
+        PageResult<Company> page = companyService.companyList(req.getName(), req.getType(), req.getStatus(), req.getPage(), req.getSize());
         return ResponseResult.success(page);
     }
     

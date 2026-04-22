@@ -29,6 +29,7 @@ import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResultCodeEnum;
+import me.zhengjie.utils.PageResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -212,7 +213,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
     /**
      * 查询企业列表（分页）
      */
-    public Page<Company> companyList(String name, CompanyType type, CompanyStatus status, Integer page, Integer size) {
+    public PageResult<Company> companyList(String name, CompanyType type, CompanyStatus status, Integer page, Integer size) {
         // 1. 获取当前登陆用户的企业ID
         Long currentCompanyId = SecurityContext.getCompanyId();
         
@@ -225,7 +226,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
             // 获取当前企业的信息，主要是为了拿到它的精准 path
             Company currentCompany = this.baseMapper.selectById(currentCompanyId);
             if (currentCompany == null) {
-                return pageObj; // 容错处理：企业被物理删除了则返回空
+                return null; // 容错处理：企业被物理删除了则返回空
             }
             
             // 🚀 神级过滤：查自己 + 所有下级！
@@ -269,7 +270,9 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         wrapper.orderByDesc(Company::getCreateTime);
         
         // 5. 执行分页查询并返回
-        return this.baseMapper.selectPage(pageObj, wrapper);
+        Page<Company> companyPage = this.baseMapper.selectPage(pageObj, wrapper);
+        
+        return new PageResult<>(companyPage.getRecords(), companyPage.getTotal());
     }
     
     /**
