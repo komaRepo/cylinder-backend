@@ -593,6 +593,9 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
             CylinderPageDto dto = new CylinderPageDto();
             BeanUtils.copyProperties(cylinder, dto);
             
+            // 手动设置 qrcode 字段
+            dto.setQrcode(cylinder.getCode());
+            
             // 5.1 获取当前所属企业的信息，并填充名称和经纬度坐标
             Company currentCompany = finalCompanyMap.get(cylinder.getCurrentCompanyId());
             if (currentCompany != null) {
