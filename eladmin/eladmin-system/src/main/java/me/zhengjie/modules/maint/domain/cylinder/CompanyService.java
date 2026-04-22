@@ -18,6 +18,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BusinessException;
@@ -206,6 +207,69 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         
         // 5. 执行查询并返回
         return this.baseMapper.selectList(wrapper);
+    }
+    
+    /**
+     * 查询企业列表（分页）
+     */
+    public Page<Company> companyList(String name, CompanyType type, CompanyStatus status, Integer page, Integer size) {
+        // 1. 获取当前登陆用户的企业ID
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        
+        Page<Company> pageObj = new Page<>(page, size);
+        
+        LambdaQueryWrapper<Company> wrapper = new LambdaQueryWrapper<>();
+        
+        // 2. 【核心权限控制】处理数据隔离
+        if (currentCompanyId != null) {
+            // 获取当前企业的信息，主要是为了拿到它的精准 path
+            Company currentCompany = this.baseMapper.selectById(currentCompanyId);
+            if (currentCompany == null) {
+                return pageObj; // 容错处理：企业被物理删除了则返回空
+            }
+            
+            // 🚀 神级过滤：查自己 + 所有下级！
+            // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
+            // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
+            wrapper.likeRight(Company::getPath, currentCompany.getPath());
+        } else {
+            // 如果 currentCompanyId 为 null，说明是框架的超级管理员 admin
+            // 不加 path 过滤，直接放行，拥有查看全国所有企业的上帝视角
+        }
+        
+        // 3. 动态拼接前端传来的普通查询条件
+        if (StrUtil.isNotBlank(name)) {
+            wrapper.like(Company::getName, name); // 名称允许全模糊搜索
+        }
+        
+        if (status != null) {
+            wrapper.eq(Company::getStatus, status);
+        }
+        
+        if (type != null) {
+            // 💡 适配我们之前设计的“多重身份”布尔值字段
+            // 因为你的入参是 CompanyType 枚举，我们需要把它翻译成具体的字段查询
+            switch (type) {
+                case MANUFACTURER: // 制造商
+                    wrapper.eq(Company::getTypeManufacturer, 1);
+                    break;
+                case DISTRIBUTOR:       // 经销商
+                    wrapper.eq(Company::getTypeDealer, 1);
+                    break;
+                case RETAILER:       // 充气站
+                    wrapper.eq(Company::getTypeFiller, 1);
+                    break;
+                case INSPECTION:   // 年检机构
+                    wrapper.eq(Company::getTypeInspection, 1);
+                    break;
+            }
+        }
+        
+        // 4. 按创建时间倒序排，新开的网点在前面
+        wrapper.orderByDesc(Company::getCreateTime);
+        
+        // 5. 执行分页查询并返回
+        return this.baseMapper.selectPage(pageObj, wrapper);
     }
     
     /**
