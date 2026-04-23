@@ -1,5 +1,8 @@
 package me.zhengjie.modules.maint.domain.dto;
 
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson2.JSONWriter;
+import com.alibaba.fastjson2.annotation.JSONField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import me.zhengjie.modules.maint.domain.cylinder.entity.AppPermission;

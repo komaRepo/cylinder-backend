@@ -85,8 +85,7 @@ public class ConfigurerAdapter implements WebMvcConfigurer {
         config.setDateFormat("yyyy-MM-dd HH:mm:ss");
         // 开启引用检测，枚举支持
         config.setWriterFeatures(
-                JSONWriter.Feature.WriteEnumUsingToString,
-                JSONWriter.Feature.ReferenceDetection
+                JSONWriter.Feature.WriteEnumUsingToString
         );
         fastJsonConverter.setFastJsonConfig(config);
         fastJsonConverter.setSupportedMediaTypes(supportMediaTypeList);
