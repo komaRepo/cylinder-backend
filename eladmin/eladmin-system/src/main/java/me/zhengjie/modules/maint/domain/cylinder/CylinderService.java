@@ -381,6 +381,14 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         }
         
         // 3. 【绝对防线】校验控制权、状态、超期情况 (同上，保持不变)
+        // 检查充气间隔：上一次充气时间必须超过5分钟
+        if (cylinder.getLastFillTime() != null) {
+            long intervalMinutes = DateUtil.between(cylinder.getLastFillTime(), new Date(), cn.hutool.core.date.DateUnit.MINUTE);
+            if (intervalMinutes < 5) {
+                throw new BusinessException(ResultCodeEnum.CYLINDER_FILL_INTERVAL_TOO_SHORT);
+            }
+        }
+        
         if (!cylinder.getCurrentCompanyId().equals(myCompanyId)) {
             throw new BusinessException(403, "产权异常：该气瓶当前不属于本充气站！");
         }

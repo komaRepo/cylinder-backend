@@ -48,7 +48,7 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     FLOW_NOT_MATCH(2004, "气瓶当前不在您所在企业名下，无法出库"),
     QRCODE_INVALID(2005, "无效的气瓶二维码"),
     CYLINDER_FLOW_ERROR(2006, "该企业没有权限执行此气瓶流转操作"),
-    
+    CYLINDER_FILL_INTERVAL_TOO_SHORT(2007, "充气间隔不足5分钟，请稍后再试"),
     
     
     ;
@@ -56,4 +56,3 @@ public enum ResultCodeEnum implements BaseErrorInfo {
     private final Integer code;
     private final String message;
 }
-
