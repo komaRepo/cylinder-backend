@@ -14,7 +14,7 @@ public class CylinderOperateDto {
 
     @NotBlank(message = "气瓶唯一编码不能为空")
     @ApiModelProperty(value = "气瓶唯一编码", required = true)
-    private String cylinderCode;
+    private String qrcode;
 
     @ApiModelProperty(value = "操作备注/说明 (如：角阀漏气已更换、瓶身严重变形予以报废等)")
     private String remarks;

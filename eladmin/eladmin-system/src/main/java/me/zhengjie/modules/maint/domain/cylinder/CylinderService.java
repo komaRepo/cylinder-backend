@@ -807,7 +807,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         Date today = new Date();
         
         // 1. 极限风控校验 (调用私有辅助方法)
-        Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "年检");
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getQrcode(), "年检");
         
         // 2. 构造溯源备注
         String remark = buildEvidenceRemark("年度检验合格", dto);
@@ -845,7 +845,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 极限风控校验
-        Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "破坏性报废");
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getQrcode(), "破坏性报废");
         
         // 强制要求报废必须有照片或说明
         if (StrUtil.isBlank(dto.getRemarks()) && CollUtil.isEmpty(dto.getImageUrls())) {
@@ -880,7 +880,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         Long myCompanyId = SecurityContext.getCompanyId();
         
         // 1. 极限风控校验
-        Cylinder cylinder = checkAndGetMyCylinder(dto.getCylinderCode(), "维修登记");
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getQrcode(), "维修登记");
         
         // 2. 构造溯源备注
         StringBuilder baseMsg = new StringBuilder("维修完成");
