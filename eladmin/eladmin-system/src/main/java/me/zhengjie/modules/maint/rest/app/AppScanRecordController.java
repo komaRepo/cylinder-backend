@@ -32,7 +32,7 @@ public class AppScanRecordController {
     // @PreAuthorize("@el.check('app:scanRecord:list')")
     @Valid
     public ResponseResult<PageResult<ScanRecordPageDto>> pageQuery(@RequestBody ScanRecordQueryReq req) {
-        Page<ScanRecordPageDto> pageData = scanRecordService.pageQuery(req);
-        return ResponseResult.success(PageUtil.toPage(pageData.getRecords(), pageData.getTotal()));
+        PageResult<ScanRecordPageDto> pageData = scanRecordService.pageQuery(req);
+        return ResponseResult.success(pageData);
     }
 }

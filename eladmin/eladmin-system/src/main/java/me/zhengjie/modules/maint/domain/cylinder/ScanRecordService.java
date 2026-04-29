@@ -12,6 +12,7 @@
  */
 package me.zhengjie.modules.maint.domain.cylinder;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import me.zhengjie.modules.maint.domain.cylinder.mapper.ScanRecordMapper;
 import me.zhengjie.modules.maint.domain.dto.ScanRecordPageDto;
 import me.zhengjie.modules.maint.rest.command.ScanRecordQueryReq;
 import me.zhengjie.modules.maint.util.SecurityContext;
+import me.zhengjie.utils.PageResult;
 import org.springframework.stereotype.Service;
 
 /**
@@ -33,10 +35,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ScanRecordService extends ServiceImpl<ScanRecordMapper, ScanRecord> {
 
-    public Page<ScanRecordPageDto> pageQuery(ScanRecordQueryReq req) {
+    public PageResult<ScanRecordPageDto> pageQuery(ScanRecordQueryReq req) {
         Long currentCompanyId = SecurityContext.getCompanyId();
         Page<ScanRecordPageDto> page = new Page<>(req.getPage(), req.getSize());
-        return (Page<ScanRecordPageDto>) this.baseMapper.pageQuery(
+        Page<ScanRecordPageDto> resultPage = (Page<ScanRecordPageDto>) this.baseMapper.pageQuery(
                 page,
                 currentCompanyId,
                 req.getScanType(),
@@ -45,5 +47,6 @@ public class ScanRecordService extends ServiceImpl<ScanRecordMapper, ScanRecord>
                 req.getStartTime(),
                 req.getEndTime()
         );
+        return new PageResult<>(resultPage.getRecords(), resultPage.getTotal());
     }
 }
