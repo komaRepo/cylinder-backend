@@ -23,8 +23,14 @@ public class OperationLogPageDto {
     @Schema(description = "操作名称")
     private OperationType operation;
 
+    @Schema(description = "操作名称中文")
+    private String operationName;
+
     @Schema(description = "操作对象类型")
     private TargetType targetType;
+
+    @Schema(description = "操作对象类型中文")
+    private String targetTypeName;
 
     @Schema(description = "对象ID")
     private Long targetId;

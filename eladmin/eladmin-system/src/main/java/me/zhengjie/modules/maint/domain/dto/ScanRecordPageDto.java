@@ -27,8 +27,14 @@ public class ScanRecordPageDto {
     @Schema(description = "扫码企业ID")
     private Long companyId;
 
+    @Schema(description = "扫码企业名称")
+    private String companyName;
+
     @Schema(description = "扫码类型 1查询 2出库 3入库 4充装 5年检")
     private Integer scanType;
+
+    @Schema(description = "扫码类型中文")
+    private String scanTypeName;
 
     @Schema(description = "扫码时间")
     private Date scanTime;

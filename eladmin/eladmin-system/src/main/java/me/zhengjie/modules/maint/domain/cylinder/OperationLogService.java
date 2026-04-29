@@ -18,7 +18,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.modules.maint.domain.cylinder.entity.AppUser;
 import me.zhengjie.modules.maint.domain.cylinder.entity.OperationLog;
+import me.zhengjie.modules.maint.domain.cylinder.mapper.AppUserMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.OperationLogMapper;
 import me.zhengjie.modules.maint.domain.dto.OperationLogPageDto;
 import me.zhengjie.modules.maint.rest.command.OperationLogQueryReq;
@@ -43,7 +45,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OperationLogService extends ServiceImpl<OperationLogMapper, OperationLog> {
     
-    private final UserMapper userMapper;
+    private final AppUserMapper userMapper;
     
     /**
      * 分页查询操作日志
@@ -105,9 +107,9 @@ public class OperationLogService extends ServiceImpl<OperationLogMapper, Operati
         // 批量查询用户
         Map<Long, String> userNameMap = new HashMap<>();
         if (CollUtil.isNotEmpty(userIds)) {
-            List<User> users = userMapper.selectBatchIds(userIds);
+            List<AppUser> users = userMapper.selectBatchIds(userIds);
             userNameMap = users.stream()
-                    .collect(Collectors.toMap(User::getId, User::getUsername));
+                    .collect(Collectors.toMap(AppUser::getId, AppUser::getUsername));
         }
         
         // 转换为DTO
@@ -116,6 +118,13 @@ public class OperationLogService extends ServiceImpl<OperationLogMapper, Operati
             OperationLogPageDto dto = new OperationLogPageDto();
             BeanUtils.copyProperties(log, dto);
             dto.setUsername(finalUserNameMap.getOrDefault(log.getUserId(), "未知用户"));
+            // 设置枚举中文名称
+            if (log.getOperation() != null) {
+                dto.setOperationName(log.getOperation().getName());
+            }
+            if (log.getTargetType() != null) {
+                dto.setTargetTypeName(log.getTargetType().getName());
+            }
             return dto;
         }).collect(Collectors.toList());
         
