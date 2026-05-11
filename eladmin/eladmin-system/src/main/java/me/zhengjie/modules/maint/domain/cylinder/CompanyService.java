@@ -23,8 +23,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BusinessException;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
+import me.zhengjie.modules.maint.domain.cylinder.entity.SysUserCompany;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyMapper;
 import me.zhengjie.modules.maint.domain.dto.CompanyVo;
+import me.zhengjie.modules.maint.domain.dto.CompanyWithAccountsDto;
+import me.zhengjie.modules.maint.domain.dto.UserInfoDTO;
+import me.zhengjie.modules.system.domain.User;
+import me.zhengjie.modules.system.mapper.UserMapper;
 import me.zhengjie.modules.maint.domain.enums.CompanyStatus;
 import me.zhengjie.modules.maint.domain.enums.CompanyType;
 import me.zhengjie.modules.maint.util.SecurityContext;
@@ -48,6 +53,8 @@ import java.util.List;
 public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
     
     private final AppRoleService appRoleService;
+    private final SysUserCompanyService sysUserCompanyService;
+    private final UserMapper userMapper;
     
     /**
      * 管理后台企业注册
@@ -140,7 +147,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
                     throw new IllegalArgumentException("分销商必须提供营业执照和危险化学品经营许可证");
                 }
         } else if (ObjectUtil.equals(type, CompanyType.RETAILER)) {
-                //加气站必须提供营业执照、危险化学品经营许可证、压力容器充装许可证和特种设备许可证
+                //加气站必须提供营业执license、危险化学品经营许可证、压力容器充装许可证和特种设备许可证
                 if (ObjectUtil.hasEmpty(businessLicense, dangerBusinessLicense, cylinderFillLicense, specialEquipmentLicense)) {
                     throw new IllegalArgumentException("加气站必须提供营业执照、危险化学品经营许可证、压力容器充装许可证和特种设备许可证");
                 }
@@ -211,9 +218,9 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
     }
     
     /**
-     * 查询企业列表（分页）
+     * 查询企业列表（分页），包含绑定的账号信息
      */
-    public PageResult<Company> companyList(String name, CompanyType type, CompanyStatus status, Integer page, Integer size) {
+    public PageResult<CompanyWithAccountsDto> companyListWithAccounts(String name, CompanyType type, CompanyStatus status, Integer page, Integer size) {
         // 1. 获取当前登陆用户的企业ID
         Long currentCompanyId = SecurityContext.getCompanyId();
         
@@ -269,10 +276,74 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 4. 按创建时间倒序排，新开的网点在前面
         wrapper.orderByDesc(Company::getCreateTime);
         
-        // 5. 执行分页查询并返回
+        // 5. 执行分页查询
         Page<Company> companyPage = this.baseMapper.selectPage(pageObj, wrapper);
+        List<Company> companies = companyPage.getRecords();
         
-        return new PageResult<>(companyPage.getRecords(), companyPage.getTotal());
+        // 6. 获取所有企业的绑定账号信息
+        List<CompanyWithAccountsDto> result = new ArrayList<>();
+        if (CollUtil.isNotEmpty(companies)) {
+            // 获取所有公司ID
+            List<Long> companyIds = companies.stream().map(Company::getId).collect(java.util.stream.Collectors.toList());
+            
+            // 查询绑定关系
+            LambdaQueryWrapper<SysUserCompany> bindWrapper = new LambdaQueryWrapper<>();
+            bindWrapper.in(SysUserCompany::getCompanyId, companyIds);
+            List<SysUserCompany> bindings = sysUserCompanyService.list(bindWrapper);
+            
+            // 按公司分组用户ID
+            java.util.Map<Long, List<Long>> companyUserMap = bindings.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    SysUserCompany::getCompanyId,
+                    java.util.stream.Collectors.mapping(SysUserCompany::getUserId, java.util.stream.Collectors.toList())
+                ));
+            
+            // 获取所有用户ID
+            List<Long> allUserIds = bindings.stream().map(SysUserCompany::getUserId).distinct().collect(java.util.stream.Collectors.toList());
+            
+            // 批量查询用户
+            List<User> users = CollUtil.isNotEmpty(allUserIds) ? userMapper.selectBatchIds(allUserIds) : new ArrayList<>();
+            java.util.Map<Long, User> userMap = users.stream().collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
+            
+            // 组装结果
+            for (Company company : companies) {
+                CompanyWithAccountsDto dto = new CompanyWithAccountsDto();
+                dto.setCompany(company);
+                
+                List<Long> userIds = companyUserMap.get(company.getId());
+                if (CollUtil.isNotEmpty(userIds)) {
+                    List<UserInfoDTO> boundAccounts = userIds.stream()
+                        .map(userId -> {
+                            User user = userMap.get(userId);
+                            return user != null ? convertToUserInfoDTO(user) : null;
+                        })
+                        .filter(java.util.Objects::nonNull)
+                        .collect(java.util.stream.Collectors.toList());
+                    dto.setBoundAccounts(boundAccounts);
+                } else {
+                    dto.setBoundAccounts(new ArrayList<>());
+                }
+                
+                result.add(dto);
+            }
+        }
+        
+        return new PageResult<>(result, companyPage.getTotal());
+    }
+    
+    /**
+     * 将User转换为UserInfoDTO
+     */
+    private UserInfoDTO convertToUserInfoDTO(User user) {
+        UserInfoDTO dto = new UserInfoDTO();
+        dto.setUserId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setPhone(user.getPhone());
+        // User类中没有userType和status字段，暂时设为默认值
+        dto.setUserType(2); // 默认普通员工
+        dto.setStatus(user.getEnabled() ? 1 : 2); // 1正常 2禁用
+        // 其他字段如果需要可以添加
+        return dto;
     }
     
     /**

@@ -32,10 +32,7 @@ import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResponseResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -115,6 +112,17 @@ public class AppRbacController {
     @Valid
     public ResponseResult<Boolean> bindUserRoles(@RequestBody AppUserRoleBindDto dto) {
         appUserRoleService.bindUserRoles(dto);
+        return ResponseResult.success(Boolean.TRUE);
+    }
+    
+    /**
+     * 删除 APP 角色
+     */
+    @PostMapping("/role/delete/{roleId}")
+    @ApiOperation("删除 APP 角色")
+    // @PreAuthorize("@el.check('appRole:delete')")
+    public ResponseResult<Boolean> deleteRole(@PathVariable Long roleId) {
+        appRoleService.deleteRole(roleId);
         return ResponseResult.success(Boolean.TRUE);
     }
 }

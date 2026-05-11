@@ -268,4 +268,24 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
         }
     }
     
+    /**
+     * 删除角色
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteRole(Long roleId) {
+        Long myAdminCompanyId = SecurityContext.getCompanyId();
+        
+        // 1. 校验角色是否存在且属于当前公司
+        AppRole role = this.baseMapper.selectById(roleId);
+        if (role == null || !role.getCompanyId().equals(myAdminCompanyId)) {
+            throw new BusinessException(ResultCodeEnum.ROLE_NOT_EXIST_OR_FORBIDDEN);
+        }
+        
+        // 2. 删除角色权限关联
+        appRolePermissionMapper.delete(new LambdaQueryWrapper<AppRolePermission>()
+                .eq(AppRolePermission::getRoleId, roleId));
+        
+        // 3. 删除角色
+        this.baseMapper.deleteById(roleId);
+    }
 }

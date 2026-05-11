@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousAccess;
 import me.zhengjie.modules.maint.domain.cylinder.CompanyService;
 import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
+import me.zhengjie.modules.maint.domain.dto.CompanyWithAccountsDto;
 import me.zhengjie.modules.maint.rest.command.CompanyRegisterCmd;
 import me.zhengjie.modules.maint.rest.command.QueryCompanyListReq;
 import me.zhengjie.sys.ResponseResult;
@@ -84,9 +85,9 @@ public class CompanyController {
     @ApiOperation("企业列表")
     @PostMapping("companyList")
     @Valid
-    public ResponseResult<PageResult<Company>> companyList(@RequestBody QueryCompanyListReq req) {
+    public ResponseResult<PageResult<CompanyWithAccountsDto>> companyList(@RequestBody QueryCompanyListReq req) {
         log.info("query company list: {}", req);
-        PageResult<Company> page = companyService.companyList(req.getName(), req.getType(), req.getStatus(), req.getPage(), req.getSize());
+        PageResult<CompanyWithAccountsDto> page = companyService.companyListWithAccounts(req.getName(), req.getType(), req.getStatus(), req.getPage(), req.getSize());
         return ResponseResult.success(page);
     }
     
