@@ -67,7 +67,16 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
             throw new BusinessException(ResultCodeEnum.COMPANY_NOT_EXIST);
         }
         
-        // 4. 【核心防越权：超级管理员拥有上帝视角，直接跳过校验】
+        // 4. 【新增校验】检查用户是否已被绑定到其他企业（绑定关系一对一）
+        SysUserCompany existingBinding = this.baseMapper.selectById(targetUserId);
+        if (existingBinding != null && !existingBinding.getCompanyId().equals(targetCompanyId)) {
+            // 查询被绑定企业的名称
+            Company boundCompany = companyMapper.selectById(existingBinding.getCompanyId());
+            String boundCompanyName = boundCompany != null ? boundCompany.getName() : "未知企业";
+            throw new BusinessException("该用户已被绑定到企业：" + boundCompanyName + "，绑定关系为一对一，无法重复绑定");
+        }
+        
+        // 5. 【核心防越权：超级管理员拥有上帝视角，直接跳过校验】
         if (!isAdmin) {
             // 场景 A：我在给自己企业的员工建账号并绑定
             boolean isMyOwnCompany = ObjectUtil.equals(targetCompanyId, myCompanyId);
@@ -81,7 +90,7 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
             }
         }
         
-        // 5. 执行绑定（利用 MyBatis-Plus 的 saveOrUpdate 解决主键冲突）
+        // 6. 执行绑定（利用 MyBatis-Plus 的 saveOrUpdate 解决主键冲突）
         SysUserCompany binding = new SysUserCompany();
         binding.setUserId(targetUserId);
         binding.setCompanyId(targetCompanyId);
