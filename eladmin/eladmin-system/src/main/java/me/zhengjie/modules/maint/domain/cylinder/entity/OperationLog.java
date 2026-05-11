@@ -34,4 +34,7 @@ public class OperationLog {
     @Schema(description = "操作时间(分区键)")
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
+
+    @Schema(description = "流转记录ID")
+    private Long flowId;
 }

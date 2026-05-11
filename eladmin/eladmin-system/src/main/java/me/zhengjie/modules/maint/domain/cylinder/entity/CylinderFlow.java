@@ -36,7 +36,14 @@ public class CylinderFlow {
     @Schema(description = "备注")
     private String remark;
     
-    @Schema(description = "操作时间(分区键)")
+    @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
+
+    // 临时字段，用于查询时设置企业名称
+    @TableField(exist = false)
+    private String fromCompanyName;
+    
+    @TableField(exist = false)
+    private String toCompanyName;
 }

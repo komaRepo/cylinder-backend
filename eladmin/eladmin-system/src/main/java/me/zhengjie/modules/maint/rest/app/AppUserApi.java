@@ -20,13 +20,17 @@ import me.zhengjie.annotation.rest.AnonymousAccess;
 import me.zhengjie.annotation.rest.AnonymousDeleteMapping;
 import me.zhengjie.config.properties.RsaProperties;
 import me.zhengjie.modules.maint.domain.cylinder.AppUserService;
+import me.zhengjie.modules.maint.domain.cylinder.OperationLogService;
 import me.zhengjie.modules.maint.domain.dto.LoginVo;
+import me.zhengjie.modules.maint.domain.dto.OperationLogPageDto;
 import me.zhengjie.modules.maint.rest.command.AppUserLoginReq;
+import me.zhengjie.modules.maint.rest.command.OperationLogQueryReq;
 import me.zhengjie.modules.maint.rest.command.UserRegisterReq;
 import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.system.domain.dto.UserPassVo;
 import me.zhengjie.sys.ResponseResult;
+import me.zhengjie.utils.PageResult;
 import me.zhengjie.utils.RsaUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +57,7 @@ public class AppUserApi {
     private final AppUserService appUserService;
     private final TokenProvider tokenProvider;
     private final OnlineUserService onlineUserService;
+    private final OperationLogService operationLogService;
     
     @ApiOperation("APP用户注册")
     @PostMapping("register")
@@ -111,6 +116,17 @@ public class AppUserApi {
         String token = tokenProvider.getToken(request);
         onlineUserService.logout(token);
         return ResponseResult.success(Boolean.TRUE);
+    }
+    
+    /**
+     * 分页查询当前登录账号的操作日志（包含关联信息）
+     */
+    @ApiOperation("分页查询当前用户操作日志")
+    @PostMapping("/operation/current/page")
+    @Valid
+    public ResponseResult<PageResult<OperationLogPageDto>> queryCurrentUserOperationLogPage(@RequestBody OperationLogQueryReq req) {
+        PageResult<OperationLogPageDto> pageData = operationLogService.queryCurrentUserOperationLogPage(req);
+        return ResponseResult.success(pageData);
     }
     
 }

@@ -40,4 +40,30 @@ public class OperationLogPageDto {
 
     @Schema(description = "操作时间")
     private Date createTime;
+
+    @Schema(description = "流转记录ID")
+    private Long flowId;
+
+    @Schema(description = "关联气瓶信息")
+    private CylinderInfo cylinderInfo;
+
+    @Schema(description = "关联企业信息")
+    private CompanyInfo companyInfo;
+
+    @Data
+    public static class CylinderInfo {
+        private Long id;
+        private String code; // 气瓶编号
+        private String spec; // 规格
+        private Double volume; // 容积
+        private String fromCompanyName; // 来源企业名称
+        private String toCompanyName; // 目标企业名称
+    }
+
+    @Data
+    public static class CompanyInfo {
+        private Long id;
+        private String name; // 企业名称
+        private String code; // 企业代码
+    }
 }

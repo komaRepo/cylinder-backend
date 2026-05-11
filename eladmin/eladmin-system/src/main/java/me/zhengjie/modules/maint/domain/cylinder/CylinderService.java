@@ -212,7 +212,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         cylinderLifecycleService.saveBatch(insertLifecycles, 1000);
         
         // 统一记录一次批量操作日志即可，无需每条气瓶记一次日志
-        recordOperationLog(OperationType.PRODUCE, TargetType.CYLINDER, (long) parsedLabels.size());
+        recordOperationLog(OperationType.PRODUCE, TargetType.CYLINDER, (long) parsedLabels.size(), null);
         
         return parsedLabels.size();
     }
@@ -257,7 +257,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 6. 记录系统级防黑客操作日志
         // ==========================================
-        recordOperationLog(OperationType.OUT, TargetType.CYLINDER, cylinder.getId());
+        recordOperationLog(OperationType.OUT, TargetType.CYLINDER, cylinder.getId(), flowId);
         
         // 记录气瓶生命周期
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.TRANSFER_OUT, "扫码出库", AccountType.APP);
@@ -308,7 +308,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 5. 记录系统级防黑客操作日志
         // ==========================================
-        recordOperationLog(OperationType.IN, TargetType.CYLINDER, cylinder.getId());
+        recordOperationLog(OperationType.IN, TargetType.CYLINDER, cylinder.getId(), flowId);
         
         // 记录气瓶生命周期
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.TRANSFER_OUT, "扫码入库", AccountType.APP);
@@ -430,7 +430,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         // 6. 记录系统级防黑客操作日志
         // ==========================================
-        recordOperationLog(OperationType.INFLATE, TargetType.CYLINDER,  cylinder.getId());
+        recordOperationLog(OperationType.INFLATE, TargetType.CYLINDER,  cylinder.getId(), flowId);
         
         // 记录气瓶生命周期
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.FILL, "扫码充气", AccountType.APP);
@@ -475,12 +475,13 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     /**
      * 工业级辅助方法 2：记录系统级防篡改操作日志
      */
-    private void recordOperationLog(OperationType operation, TargetType targetType, Long targetId) {
+    private void recordOperationLog(OperationType operation, TargetType targetType, Long targetId, Long flowId) {
         OperationLog log = new OperationLog();
         log.setUserId(SecurityContext.getUserId());
         log.setOperation(operation);
         log.setTargetType(targetType);
         log.setTargetId(targetId);
+        log.setFlowId(flowId);
         
         // 获取当前请求的真实 IP
         try {
@@ -823,7 +824,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // 3. 记录多维流水追踪 (与 fillCylinder 保持同样的高规格架构)
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.INSPECTION.getCode());
         Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 5, myUserId, remark);
-        recordOperationLog(OperationType.INSPECTION, TargetType.CYLINDER, cylinder.getId());
+        recordOperationLog(OperationType.INSPECTION, TargetType.CYLINDER, cylinder.getId(), flowId);
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.INSPECT, remark, AccountType.APP);
         
         // 4. 更新主表状态：移交控制权、刷新有效期
@@ -866,7 +867,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // 3. 记录流水追踪
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.SCRAP.getCode());
         Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 6, myUserId, remark);
-        recordOperationLog(OperationType.SCRAP, TargetType.CYLINDER, cylinder.getId());
+        recordOperationLog(OperationType.SCRAP, TargetType.CYLINDER, cylinder.getId(), flowId);
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.SCRAP, remark, AccountType.APP);
         
         // 4. 更新主表：【彻底死亡】
@@ -900,7 +901,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // 3. 记录流水追踪
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.REPAIR.getCode());
         Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 7, myUserId, remark);
-        recordOperationLog(OperationType.REPAIR, TargetType.CYLINDER, cylinder.getId());
+        recordOperationLog(OperationType.REPAIR, TargetType.CYLINDER, cylinder.getId(), flowId);
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.REPAIR, remark, AccountType.APP);
         
         // 4. 更新主表：恢复健康状态
