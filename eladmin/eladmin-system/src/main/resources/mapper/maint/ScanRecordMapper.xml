@@ -17,7 +17,9 @@
         LEFT JOIN app_user au ON sr.user_id = au.id
         LEFT JOIN sys_user su ON sr.user_id = su.user_id
         <where>
-            sr.company_id = #{companyId}
+            <if test="companyId != null">
+                sr.company_id = #{companyId}
+            </if>
             <if test="scanType != null">
                 AND sr.scan_type = #{scanType}
             </if>

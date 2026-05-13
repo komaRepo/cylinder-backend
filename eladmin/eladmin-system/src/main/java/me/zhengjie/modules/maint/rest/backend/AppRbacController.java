@@ -84,8 +84,9 @@ public class AppRbacController {
     // @PreAuthorize("@el.check('appRole:list')")
     public ResponseResult<PageResult<AppRoleDetailDto>> listRoles(@RequestBody PageQueryReq req) {
         // 获取当前登录人的所属企业
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long companyId = SecurityContext.getCompanyId();
-        PageResult<AppRoleDetailDto> pageData = appRoleService.listRolesWithPermissions(req, companyId);
+        PageResult<AppRoleDetailDto> pageData = appRoleService.listRolesWithPermissions(req, isAdmin ? null : companyId);
         return ResponseResult.success(pageData);
     }
     
@@ -97,8 +98,7 @@ public class AppRbacController {
     // @PreAuthorize("@el.check('appRole:add', 'appRole:edit')")
     @Valid
     public ResponseResult<Boolean> saveRole(@RequestBody AppRoleSaveDto dto) {
-        Long companyId = SecurityContext.getCompanyId();
-        dto.setCompanyId(companyId);
+        // 不在这里设置companyId，让service层处理
         appRoleService.saveOrUpdateRole(dto);
         return ResponseResult.success(Boolean.TRUE);
     }

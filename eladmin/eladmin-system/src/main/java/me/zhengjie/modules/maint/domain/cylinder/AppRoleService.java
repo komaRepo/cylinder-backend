@@ -64,21 +64,29 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateRole(AppRoleSaveDto dto) {
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long myAdminCompanyId = SecurityContext.getCompanyId();
         
         AppRole role = new AppRole();
         role.setName(dto.getName());
-        role.setCompanyId(myAdminCompanyId);
+        // admin用户可以管理所有公司的角色，如果有companyId则使用，否则为null（表示全局角色）
+        role.setCompanyId(isAdmin ? null : myAdminCompanyId);
         
         if (dto.getId() == null) {
             // 1. 新增角色
             this.baseMapper.insert(role);
         } else {
-            // 2. 修改角色 (防越权校验：只能修改自己公司的角色)
+            // 2. 修改角色 (防越权校验：admin可以修改所有角色，普通用户只能修改自己公司的角色)
             AppRole oldRole = this.baseMapper.selectById(dto.getId());
-            if (oldRole == null || !oldRole.getCompanyId().equals(myAdminCompanyId)) {
+            if (oldRole == null) {
+                throw new BusinessException(ResultCodeEnum.ROLE_NOT_EXIST_OR_FORBIDDEN);
+            }
+            
+            // 如果不是admin用户，检查角色是否属于当前用户公司
+            if (!isAdmin && !oldRole.getCompanyId().equals(myAdminCompanyId)) {
                 throw new BusinessException(ResultCodeEnum.ROLE_MODIFY_FORBIDDEN);
             }
+            
             role.setId(dto.getId());
             this.baseMapper.updateById(role);
             
@@ -108,14 +116,14 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
         // 1. 第一步：仅对【角色主表】进行干净的物理分页
         // ==========================================
         Page<AppRole> page = new Page<>(req.getPage(), req.getSize());
-        LambdaQueryWrapper<AppRole> queryWrapper = new LambdaQueryWrapper<AppRole>()
-                .eq(AppRole::getCompanyId, companyId)
-                .orderByDesc(AppRole::getCreateTime);
+        LambdaQueryWrapper<AppRole> queryWrapper = new LambdaQueryWrapper<>();
         
-        // 如果前端传了角色名称来搜索
-        // if (StrUtil.isNotBlank(req.getKeyword())) {
-        //     queryWrapper.like(AppRole::getName, req.getKeyword());
-        // }
+        // 如果companyId不为null，只查询指定公司的角色；如果为null（admin用户），查询所有角色
+        if (companyId != null) {
+            queryWrapper.eq(AppRole::getCompanyId, companyId);
+        }
+        
+        queryWrapper.orderByDesc(AppRole::getCreateTime);
         
         this.baseMapper.selectPage(page, queryWrapper);
         List<AppRole> roleRecords = page.getRecords();
@@ -273,11 +281,17 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long roleId) {
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long myAdminCompanyId = SecurityContext.getCompanyId();
         
-        // 1. 校验角色是否存在且属于当前公司
+        // 1. 校验角色是否存在
         AppRole role = this.baseMapper.selectById(roleId);
-        if (role == null || !role.getCompanyId().equals(myAdminCompanyId)) {
+        if (role == null) {
+            throw new BusinessException(ResultCodeEnum.ROLE_NOT_EXIST_OR_FORBIDDEN);
+        }
+        
+        // 如果不是admin用户，检查角色是否属于当前用户公司
+        if (!isAdmin && !role.getCompanyId().equals(myAdminCompanyId)) {
             throw new BusinessException(ResultCodeEnum.ROLE_NOT_EXIST_OR_FORBIDDEN);
         }
         

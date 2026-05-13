@@ -142,7 +142,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         //todo 待校验自治区要填写市，直辖市要填写区县
         
         if (ObjectUtil.equals(type, CompanyType.DISTRIBUTOR)) {
-                //分销商必须提供营业执照和危险化学品经营许可证
+                //分销商必须提供营业执license和危险化学品经营许可证
                 if (ObjectUtil.hasEmpty(businessLicense, dangerBusinessLicense)) {
                     throw new IllegalArgumentException("分销商必须提供营业执照和危险化学品经营许可证");
                 }
@@ -160,26 +160,28 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
      * 查询企业列表（不分页）
      */
     public List<Company> companyList(String name, CompanyType type, CompanyStatus status) {
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         // 1. 获取当前登陆用户的企业ID
         Long currentCompanyId = SecurityContext.getCompanyId();
         
         LambdaQueryWrapper<Company> wrapper = new LambdaQueryWrapper<>();
         
         // 2. 【核心权限控制】处理数据隔离
-        if (currentCompanyId != null) {
-            // 获取当前企业的信息，主要是为了拿到它的精准 path
-            Company currentCompany = this.baseMapper.selectById(currentCompanyId);
-            if (currentCompany == null) {
-                return new ArrayList<>(); // 容错处理：企业被物理删除了则返回空
+        if (!isAdmin) {
+            if (currentCompanyId != null) {
+                // 获取当前企业的信息，主要是为了拿到它的精准 path
+                Company currentCompany = this.baseMapper.selectById(currentCompanyId);
+                if (currentCompany == null) {
+                    return new ArrayList<>(); // 容错处理：企业被物理删除了则返回空
+                }
+                
+                // 🚀 神级过滤：查自己 + 所有下级！
+                // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
+                // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
+                wrapper.likeRight(Company::getPath, currentCompany.getPath());
+            } else {
+                throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
             }
-            
-            // 🚀 神级过滤：查自己 + 所有下级！
-            // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
-            // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
-            wrapper.likeRight(Company::getPath, currentCompany.getPath());
-        } else {
-            // 如果 currentCompanyId 为 null，说明是框架的超级管理员 admin
-            // 不加 path 过滤，直接放行，拥有查看全国所有企业的上帝视角
         }
         
         // 3. 动态拼接前端传来的普通查询条件
@@ -192,7 +194,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         }
         
         if (type != null) {
-            // 💡 适配我们之前设计的“多重身份”布尔值字段
+            // 💡 适配我们之前设计的"多重身份"布尔值字段
             // 因为你的入参是 CompanyType 枚举，我们需要把它翻译成具体的字段查询
             switch (type) {
                 case MANUFACTURER: // 制造商
@@ -221,6 +223,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
      * 查询企业列表（分页），包含绑定的账号信息
      */
     public PageResult<CompanyWithAccountsDto> companyListWithAccounts(String name, CompanyType type, CompanyStatus status, Integer page, Integer size) {
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         // 1. 获取当前登陆用户的企业ID
         Long currentCompanyId = SecurityContext.getCompanyId();
         
@@ -228,21 +231,22 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         
         LambdaQueryWrapper<Company> wrapper = new LambdaQueryWrapper<>();
         
-        // 2. 【核心权限控制】处理数据隔离
-        if (currentCompanyId != null) {
-            // 获取当前企业的信息，主要是为了拿到它的精准 path
-            Company currentCompany = this.baseMapper.selectById(currentCompanyId);
-            if (currentCompany == null) {
-                return null; // 容错处理：企业被物理删除了则返回空
+        if (!isAdmin) {
+            // 2. 【核心权限控制】处理数据隔离
+            if (currentCompanyId != null) {
+                // 获取当前企业的信息，主要是为了拿到它的精准 path
+                Company currentCompany = this.baseMapper.selectById(currentCompanyId);
+                if (currentCompany == null) {
+                    return new PageResult<>(new ArrayList<>(), 0L);
+                }
+                
+                // 🚀 神级过滤：查自己 + 所有下级！
+                // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
+                // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
+                wrapper.likeRight(Company::getPath, currentCompany.getPath());
+            } else {
+                throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
             }
-            
-            // 🚀 神级过滤：查自己 + 所有下级！
-            // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
-            // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
-            wrapper.likeRight(Company::getPath, currentCompany.getPath());
-        } else {
-            // 如果 currentCompanyId 为 null，说明是框架的超级管理员 admin
-            // 不加 path 过滤，直接放行，拥有查看全国所有企业的上帝视角
         }
         
         // 3. 动态拼接前端传来的普通查询条件
@@ -255,7 +259,6 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         }
         
         if (type != null) {
-            // 💡 适配我们之前设计的“多重身份”布尔值字段
             // 因为你的入参是 CompanyType 枚举，我们需要把它翻译成具体的字段查询
             switch (type) {
                 case MANUFACTURER: // 制造商

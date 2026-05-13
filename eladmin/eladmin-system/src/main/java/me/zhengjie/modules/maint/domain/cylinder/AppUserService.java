@@ -72,14 +72,15 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
      */
     public Page<AppUserDetail> fetchUserList(Long roleId, String username, String phone, UserStatus status,
                                              Date createTimeStart, Date createTimeEnd, Integer pageAt, Integer pageSize) {
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long companyId = SecurityContext.getCompanyId();
-        if (companyId == null) {
+        if (!isAdmin && companyId == null) {
             throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
         }
         
         Page<Object> page = Page.of(pageAt, pageSize);
         
-        return this.baseMapper.fetchUserList(companyId, roleId, username, phone, status, createTimeStart, createTimeEnd, page);
+        return this.baseMapper.fetchUserList(isAdmin ? null : companyId, roleId, username, phone, status, createTimeStart, createTimeEnd, page);
     }
     
     /**
@@ -234,15 +235,19 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
      * ================= 获取待审批列表 =================
      */
     public Page<AppUserDetail> getPendingPage(Integer current, Integer size) {
-        
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long myAdminCompanyId = SecurityContext.getCompanyId();
+        
+        if (!isAdmin && myAdminCompanyId == null) {
+            throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
+        }
         
         Page<AppUser> page = new Page<>(current, size);
         
         Page<AppUser> result = this.baseMapper.selectPage(
                 page,
                 new LambdaQueryWrapper<AppUser>()
-                        .eq(AppUser::getCompanyId, myAdminCompanyId)
+                        .eq(!isAdmin, AppUser::getCompanyId, myAdminCompanyId)
                         .eq(AppUser::getStatus, 0)
                         .orderByDesc(AppUser::getCreateTime)
         );
@@ -256,8 +261,13 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
     @Transactional(rollbackFor = Exception.class)
     public void activateUser(Long targetUserId) {
         // 1. 拿当前管理员的信息
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long myAdminCompanyId = SecurityContext.getCompanyId();
         Long myAdminUserId = SecurityContext.getUserId();
+        
+        if (!isAdmin && myAdminCompanyId == null) {
+            throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
+        }
         
         // 2. 查询目标待激活的用户
         AppUser targetUser = this.baseMapper.selectById(targetUserId);
@@ -271,7 +281,7 @@ public class AppUserService extends ServiceImpl<AppUserMapper, AppUser> {
         }
         
         // 4. 【绝对核心防线：防越权漏洞】
-        if (!targetUser.getCompanyId().equals(myAdminCompanyId)) {
+        if (!isAdmin && !targetUser.getCompanyId().equals(myAdminCompanyId)) {
             throw new BusinessException(ResultCodeEnum.ACTIVATE_OTHER_COMPANY_FORBIDDEN);
         }
         

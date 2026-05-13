@@ -49,11 +49,12 @@ public class ScanRecordService extends ServiceImpl<ScanRecordMapper, ScanRecord>
     private final CompanyMapper companyMapper;
 
     public PageResult<ScanRecordPageDto> pageQuery(ScanRecordQueryReq req) {
+        Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
         Long currentCompanyId = SecurityContext.getCompanyId();
         Page<ScanRecordPageDto> page = new Page<>(req.getPage(), req.getSize());
         Page<ScanRecordPageDto> resultPage = (Page<ScanRecordPageDto>) this.baseMapper.pageQuery(
                 page,
-                currentCompanyId,
+                isAdmin ? null : currentCompanyId, // admin用户传null，不加company_id过滤
                 req.getScanType(),
                 req.getCylinderCode(),
                 req.getUserId(),
