@@ -32,6 +32,8 @@ import me.zhengjie.modules.system.mapper.UserMapper;
 import me.zhengjie.modules.system.mapper.UserRoleMapper;
 import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.utils.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,7 +60,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final FileProperties properties;
     private final RedisUtils redisUtils;
     private final UserCacheManager userCacheManager;
-    private final OnlineUserService onlineUserService;
+    @Autowired
+    @Lazy
+    private OnlineUserService onlineUserService;
 
     @Override
     public PageResult<User> queryAll(UserQueryCriteria criteria, Page<Object> page) {
