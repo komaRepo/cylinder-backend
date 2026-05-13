@@ -125,6 +125,16 @@ public class AuthController {
         return ResponseEntity.ok(jwtUser);
     }
 
+    @ApiOperation("刷新Token")
+    @AnonymousPostMapping(value = "/refresh")
+    public ResponseEntity<Object> refresh(HttpServletRequest request) {
+        String token = tokenProvider.getToken(request);
+        Map<String, Object> authInfo = new HashMap<String, Object>(1) {{
+            put("token", onlineUserService.refresh(token, request));
+        }};
+        return ResponseEntity.ok(authInfo);
+    }
+
     @ApiOperation("获取验证码")
     @AnonymousGetMapping(value = "/code")
     public ResponseEntity<Object> getCode() {

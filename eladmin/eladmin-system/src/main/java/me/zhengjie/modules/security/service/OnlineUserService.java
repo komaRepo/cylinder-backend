@@ -18,6 +18,7 @@ package me.zhengjie.modules.security.service;
 import cn.hutool.core.util.ObjectUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.utils.PageResult;
 import me.zhengjie.modules.security.config.SecurityProperties;
@@ -25,6 +26,7 @@ import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.security.service.dto.OnlineUserDto;
 import me.zhengjie.utils.*;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,6 +46,7 @@ public class OnlineUserService {
     private final SecurityProperties properties;
     private final TokenProvider tokenProvider;
     private final RedisUtils redisUtils;
+    private final UserDetailsService userDetailsService;
 
     /**
      * 保存在线用户信息
@@ -64,7 +67,22 @@ public class OnlineUserService {
             log.error(e.getMessage(),e);
         }
         String loginKey = tokenProvider.loginKey(token);
-        redisUtils.set(loginKey, onlineUserDto, properties.getTokenValidityInSeconds(), TimeUnit.MILLISECONDS);
+        redisUtils.set(loginKey, onlineUserDto, tokenProvider.getTokenValidity(jwtUserDto.getAccountType()), TimeUnit.MILLISECONDS);
+    }
+
+    public String refresh(String oldToken, HttpServletRequest request) {
+        if (StringUtils.isBlank(oldToken)) {
+            throw new BadRequestException("Token不能为空");
+        }
+        JwtUserDto jwtUserDto = (JwtUserDto) userDetailsService.loadUserByUsername(tokenProvider.getClaims(oldToken).getSubject());
+        String newToken = tokenProvider.createToken(jwtUserDto);
+        save(jwtUserDto, newToken, request);
+        try {
+            redisUtils.del(tokenProvider.loginKey(oldToken));
+        } catch (Exception e) {
+            log.debug("旧Token在线记录清理失败：{}", e.getMessage());
+        }
+        return properties.getTokenStartWith().concat(newToken);
     }
 
     /**

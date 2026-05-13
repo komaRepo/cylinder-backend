@@ -51,6 +51,16 @@ public class SecurityProperties {
     private Long tokenValidityInSeconds;
 
     /**
+     * Web 管理端令牌过期时间，单位/毫秒
+     */
+    private Long webTokenValidityInSeconds;
+
+    /**
+     * APP 端令牌过期时间，单位/毫秒
+     */
+    private Long appTokenValidityInSeconds;
+
+    /**
      * 在线用户 key，根据 key 查询 redis 中在线用户的数据
      */
     private String onlineKey;

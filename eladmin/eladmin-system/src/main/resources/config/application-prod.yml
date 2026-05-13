@@ -89,6 +89,10 @@ jwt:
   base64-secret: ZmQ0ZGI5NjQ0MDQwY2I4MjMxY2Y3ZmI3MjdhN2ZmMjNhODViOTg1ZGE0NTBjMGM4NDA5NzYxMjdjOWMwYWRmZTBlZjlhNGY3ZTg4Y2U3YTE1ODVkZDU5Y2Y3OGYwZWE1NzUzNWQ2YjFjZDc0NGMxZWU2MmQ3MjY1NzJmNTE0MzI=
   # 令牌过期时间 此处单位/毫秒 ，默认2小时，可在此网站生成 https://www.convertworld.com/zh-hans/time/milliseconds.html
   token-validity-in-seconds: 7200000
+  # Web 管理端令牌过期时间：1天
+  web-token-validity-in-seconds: 86400000
+  # APP 端令牌过期时间：30天
+  app-token-validity-in-seconds: 2592000000
   # 在线用户key
   online-key: "online_token:"
   # 验证码

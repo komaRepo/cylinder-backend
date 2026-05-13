@@ -117,6 +117,14 @@ public class AppUserApi {
         onlineUserService.logout(token);
         return ResponseResult.success(Boolean.TRUE);
     }
+
+    @ApiOperation("APP刷新Token")
+    @PostMapping(value = "/refresh")
+    @AnonymousAccess
+    public ResponseResult<String> refresh(HttpServletRequest request) {
+        String token = tokenProvider.getToken(request);
+        return ResponseResult.success(onlineUserService.refresh(token, request));
+    }
     
     /**
      * 分页查询当前登录账号的操作日志（包含关联信息）

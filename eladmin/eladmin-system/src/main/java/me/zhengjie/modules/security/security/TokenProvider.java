@@ -24,6 +24,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.config.SecurityProperties;
+import me.zhengjie.modules.maint.domain.enums.AccountType;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.utils.RedisUtils;
 import org.springframework.beans.factory.InitializingBean;
@@ -101,6 +102,24 @@ public class TokenProvider implements InitializingBean {
         return jwtParser
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public AccountType getAccountType(String token) {
+        String subject = getClaims(token).getSubject();
+        if (subject != null && subject.startsWith(AccountType.APP.name() + ":")) {
+            return AccountType.APP;
+        }
+        return AccountType.ADMIN;
+    }
+
+    public long getTokenValidity(AccountType accountType) {
+        if (accountType == AccountType.APP && properties.getAppTokenValidityInSeconds() != null) {
+            return properties.getAppTokenValidityInSeconds();
+        }
+        if (accountType == AccountType.ADMIN && properties.getWebTokenValidityInSeconds() != null) {
+            return properties.getWebTokenValidityInSeconds();
+        }
+        return properties.getTokenValidityInSeconds();
     }
 
     /**
