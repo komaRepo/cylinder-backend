@@ -2,6 +2,7 @@ package me.zhengjie.modules.maint.rest.command;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.util.Date;
 
@@ -13,7 +14,7 @@ public class CylinderQueryReq extends PageQueryReq{
     private String code;
 
     @Schema(description = "气瓶状态 (0建档 1在库 2流转 3待检 4报废)")
-    private Integer currentStatus;
+    private CylinderStatus currentStatus;
 
     @Schema(description = "当前所属企业ID (超级管理员用来筛选企业)")
     private Long currentCompanyId;
