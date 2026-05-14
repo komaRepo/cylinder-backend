@@ -13,8 +13,12 @@
 package me.zhengjie.modules.maint.domain.cylinder.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import me.zhengjie.modules.maint.domain.cylinder.entity.OperationLog;
+import me.zhengjie.modules.maint.domain.enums.OperationType;
+import me.zhengjie.modules.maint.domain.enums.TargetType;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * TODO
@@ -25,5 +29,6 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface OperationLogMapper extends BaseMapper<OperationLog> {
 
+    Page<OperationLog> selectPageByCompany(Page<OperationLog> page, @Param("companyId") Long companyId, @Param("operation") OperationType operation, @Param("targetType") TargetType targetType, @Param("targetId") Long targetId, @Param("ip") String ip, @Param("startTime") java.util.Date startTime, @Param("endTime") java.util.Date endTime);
 
 }

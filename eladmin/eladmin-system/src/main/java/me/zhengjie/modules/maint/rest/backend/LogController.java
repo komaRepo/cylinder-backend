@@ -52,10 +52,9 @@ public class LogController {
      */
     @ApiOperation("分页查询操作日志")
     @PostMapping("/operation/page")
-    // @PreAuthorize("@el.check('log:operation:list')")
     @Valid
-    public ResponseResult<PageResult<OperationLogPageDto>> queryOperationLogPage(@RequestBody OperationLogQueryReq req) {
-        PageResult<OperationLogPageDto> pageData = operationLogService.queryOperationLogPage(req);
+    public ResponseResult<PageResult<OperationLogPageDto>> queryOrgOperationLogPage(@RequestBody OperationLogQueryReq req) {
+        PageResult<OperationLogPageDto> pageData = operationLogService.queryOrgOperationLogPage(req);
         return ResponseResult.success(pageData);
     }
 

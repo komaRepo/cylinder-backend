@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.zhengjie.modules.maint.domain.cylinder.mapper.OperationLogMapper">
+
+    <select id="selectPageByCompany" resultType="me.zhengjie.modules.maint.domain.cylinder.entity.OperationLog">
+        SELECT ol.* FROM operation_log ol
+        LEFT JOIN app_user u ON ol.user_id = u.id
+        <where>
+            <if test="companyId != null">
+                u.company_id = #{companyId}
+            </if>
+            <if test="operation != null">
+                AND ol.operation = #{operation}
+            </if>
+            <if test="targetType != null">
+                AND ol.target_type = #{targetType}
+            </if>
+            <if test="targetId != null">
+                AND ol.target_id = #{targetId}
+            </if>
+            <if test="ip != null and ip != ''">
+                AND ol.ip LIKE CONCAT('%', #{ip}, '%')
+            </if>
+            <if test="startTime != null">
+                AND ol.create_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND ol.create_time <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+        ORDER BY ol.create_time DESC
+    </select>
+
+</mapper>
