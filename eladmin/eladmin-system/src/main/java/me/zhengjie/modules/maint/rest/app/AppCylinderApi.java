@@ -19,16 +19,15 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
 import me.zhengjie.modules.maint.domain.dto.CylinderFillDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderFlowDto;
+import me.zhengjie.modules.maint.domain.dto.CylinderFlowRecordDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderOperateDto;
 import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.sys.ResponseResult;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  *
@@ -125,6 +124,17 @@ public class AppCylinderApi {
         // 记录维修流水日志，方便日后溯源追责
         cylinderService.repairCylinder(dto);
         return ResponseResult.success(Boolean.TRUE);
+    }
+    
+    
+    /**
+     * app端：获取气瓶流转记录
+     */
+    @ApiOperation("app端：获取气瓶流转记录")
+    @GetMapping("/flows/{code}")
+    public ResponseResult<List<CylinderFlowRecordDto>> getCylinderFlows(@PathVariable("qrcode") String qrcode) {
+        List<CylinderFlowRecordDto> flows = cylinderService.getCylinderFlows(qrcode);
+        return ResponseResult.success(flows);
     }
     
 }

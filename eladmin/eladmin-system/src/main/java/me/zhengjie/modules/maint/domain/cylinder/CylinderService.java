@@ -914,4 +914,79 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     }
     
     
+    /**
+     * 获取气瓶的流转记录
+     */
+    public List<CylinderFlowRecordDto> getCylinderFlows(Long cylinderId) {
+        LambdaQueryWrapper<CylinderFlow> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CylinderFlow::getCylinderId, cylinderId);
+        wrapper.orderByDesc(CylinderFlow::getCreateTime);
+        
+        List<CylinderFlow> flows = cylinderFlowMapper.selectList(wrapper);
+        if (CollUtil.isEmpty(flows)) {
+            return new ArrayList<>();
+        }
+        
+        // 收集企业ID
+        Set<Long> companyIds = new HashSet<>();
+        flows.forEach(flow -> {
+            if (flow.getFromCompanyId() != null) companyIds.add(flow.getFromCompanyId());
+            if (flow.getToCompanyId() != null) companyIds.add(flow.getToCompanyId());
+        });
+        
+        Map<Long, String> companyNameMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(companyIds)) {
+            List<Company> companies = companyMapper.selectBatchIds(companyIds);
+            companyNameMap = companies.stream().collect(Collectors.toMap(Company::getId, Company::getName));
+        }
+        
+        // 收集操作人ID
+        Set<Long> operatorIds = flows.stream()
+                                     .map(CylinderFlow::getOperatorId)
+                                     .filter(Objects::nonNull)
+                                     .collect(Collectors.toSet());
+        
+        Map<Long, String> operatorNameMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(operatorIds)) {
+            List<AppUser> operators = appUserMapper.selectBatchIds(operatorIds);
+            operatorNameMap = operators.stream().collect(Collectors.toMap(AppUser::getId, AppUser::getUsername));
+        }
+        
+        // 转换为DTO
+        Map<Long, String> finalCompanyNameMap = companyNameMap;
+        Map<Long, String> finalOperatorNameMap = operatorNameMap;
+        List<CylinderFlowRecordDto> dtoList = flows.stream().map(flow -> {
+            CylinderFlowRecordDto dto = new CylinderFlowRecordDto();
+            dto.setId(flow.getId());
+            dto.setBatchFlowNo(flow.getBatchFlowNo());
+            dto.setFromCompanyName(finalCompanyNameMap.get(flow.getFromCompanyId()));
+            dto.setToCompanyName(finalCompanyNameMap.get(flow.getToCompanyId()));
+            if (flow.getType() != null) {
+                FlowType flowType = FlowType.getByCode(flow.getType());
+                if (flowType != null) {
+                    dto.setFlowTypeName(flowType.getName());
+                }
+            }
+            dto.setOperatorName(finalOperatorNameMap.get(flow.getOperatorId()));
+            dto.setRemark(flow.getRemark());
+            dto.setCreateTime(flow.getCreateTime());
+            return dto;
+        }).collect(Collectors.toList());
+        
+        return dtoList;
+    }
+    
+    
+    /**
+     * app端获取气瓶流转记录
+     */
+    public List<CylinderFlowRecordDto> getCylinderFlows(String code) {
+        Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
+                .eq(Cylinder::getCode, code));
+        if (cylinder == null) {
+            return new ArrayList<>();
+        }
+        return getCylinderFlows(cylinder.getId());
+    }
+
 }

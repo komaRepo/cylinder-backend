@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.maint.domain.cylinder.CylinderService;
 import me.zhengjie.modules.maint.domain.dto.CylinderDetailDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderExcelDto;
+import me.zhengjie.modules.maint.domain.dto.CylinderFlowRecordDto;
 import me.zhengjie.modules.maint.domain.dto.CylinderPageDto;
 import me.zhengjie.modules.maint.rest.command.CylinderQueryReq;
 import me.zhengjie.sys.ResponseResult;
@@ -104,6 +105,16 @@ public class CylinderController {
     public ResponseResult<CylinderDetailDto> getDetail(@PathVariable("id") Long id) {
         CylinderDetailDto detail = cylinderService.getCylinderDetail(id);
         return ResponseResult.success(detail);
+    }
+    
+    /**
+     * 管理端：获取气瓶流转记录
+     */
+    @ApiOperation("管理端：获取气瓶流转记录")
+    @GetMapping("/flows/{id}")
+    public ResponseResult<List<CylinderFlowRecordDto>> getCylinderFlows(@PathVariable("id") Long id) {
+        List<CylinderFlowRecordDto> flows = cylinderService.getCylinderFlows(id);
+        return ResponseResult.success(flows);
     }
     
 }

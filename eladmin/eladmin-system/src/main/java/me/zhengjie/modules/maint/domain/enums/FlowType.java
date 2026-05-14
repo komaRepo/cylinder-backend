@@ -35,4 +35,21 @@ public enum FlowType {
         this.code = code;
         this.name = name;
     }
+
+    public static FlowType getByCode(int code) {
+        for (FlowType type : values()) {
+            if (type.code == code) {
+                return type;
+            }
+        }
+        return null;
+    }
+    
+    public int getCode() {
+        return code;
+    }
+    
+    public String getName() {
+        return name;
+    }
 }
