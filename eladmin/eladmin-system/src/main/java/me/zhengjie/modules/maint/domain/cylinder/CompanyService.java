@@ -164,7 +164,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 1. 获取当前登陆用户的企业ID
         Long currentCompanyId = SecurityContext.getCompanyId();
         
-        LambdaQueryWrapper<Company> wrapper = new LambdaQueryWrapper<>();
+        QueryWrapper<Company> wrapper = new QueryWrapper<>();
         
         // 2. 【核心权限控制】处理数据隔离
         if (!isAdmin) {
@@ -178,7 +178,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
                 // 🚀 神级过滤：查自己 + 所有下级！
                 // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
                 // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
-                wrapper.likeRight(Company::getPath, currentCompany.getPath());
+                wrapper.lambda().likeRight(Company::getPath, currentCompany.getPath());
             } else {
                 throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
             }
@@ -186,11 +186,11 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         
         // 3. 动态拼接前端传来的普通查询条件
         if (StrUtil.isNotBlank(name)) {
-            wrapper.like(Company::getName, name); // 名称允许全模糊搜索
+            wrapper.lambda().like(Company::getName, name); // 名称允许全模糊搜索
         }
         
         if (status != null) {
-            wrapper.eq(Company::getStatus, status);
+            wrapper.lambda().eq(Company::getStatus, status);
         }
         
         if (type != null) {
@@ -198,24 +198,27 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
             // 因为你的入参是 CompanyType 枚举，我们需要把它翻译成具体的字段查询
             switch (type) {
                 case MANUFACTURER: // 制造商
-                    wrapper.eq(Company::getTypeManufacturer, 1);
+                    wrapper.lambda().eq(Company::getTypeManufacturer, 1);
                     break;
                 case DISTRIBUTOR:       // 经销商
-                    wrapper.eq(Company::getTypeDealer, 1);
+                    wrapper.lambda().eq(Company::getTypeDealer, 1);
                     break;
                 case RETAILER:       // 充气站
-                    wrapper.eq(Company::getTypeFiller, 1);
+                    wrapper.lambda().eq(Company::getTypeFiller, 1);
                     break;
                 case INSPECTION:   // 年检机构
-                    wrapper.eq(Company::getTypeInspection, 1);
+                    wrapper.lambda().eq(Company::getTypeInspection, 1);
                     break;
             }
         }
         
         // 4. 按创建时间倒序排，新开的网点在前面
-        wrapper.orderByDesc(Company::getCreateTime);
+        wrapper.lambda().orderByDesc(Company::getCreateTime);
         
-        // 5. 执行查询并返回
+        // 5. 只返回绑定了后台账号的企业
+        wrapper.apply("exists (select 1 from sys_user_company where company_id = company.id)");
+        
+        // 6. 执行查询并返回
         return this.baseMapper.selectList(wrapper);
     }
     
@@ -279,11 +282,14 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 4. 按创建时间倒序排，新开的网点在前面
         wrapper.orderByDesc(Company::getCreateTime);
         
-        // 5. 执行分页查询
+        // 5. 只返回绑定了后台账号的企业
+        wrapper.apply("exists (select 1 from sys_user_company where company_id = company.id)");
+        
+        // 6. 执行分页查询
         Page<Company> companyPage = this.baseMapper.selectPage(pageObj, wrapper);
         List<Company> companies = companyPage.getRecords();
         
-        // 6. 获取所有企业的绑定账号信息
+        // 7. 获取所有企业的绑定账号信息
         List<CompanyWithAccountsDto> result = new ArrayList<>();
         if (CollUtil.isNotEmpty(companies)) {
             // 获取所有公司ID

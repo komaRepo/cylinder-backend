@@ -28,7 +28,7 @@ public class UserCompanyBindController {
      * @param targetCompanyId 目标企业 ID
      */
     @PostMapping("/{targetUserId}/{targetCompanyId}")
-    @PreAuthorize("@el.check('company:bind')")
+    // @PreAuthorize("@el.check('company:bind')")
     public ResponseResult<Boolean> bindUserAndCompany(
             @PathVariable Long targetUserId, 
             @PathVariable Long targetCompanyId) {
@@ -41,7 +41,7 @@ public class UserCompanyBindController {
      * 在企业列表为企业注册后台账号，并自动完成部门、角色、数据权限和企业绑定。
      */
     @PostMapping("/account")
-    @PreAuthorize("@el.check('company:bind')")
+    // @PreAuthorize("@el.check('company:bind')")
     public ResponseResult<Map<String, Long>> registerCompanyAccount(@Validated @RequestBody CompanyAccountRegisterCmd cmd) {
         Long userId = bindService.registerCompanyAccount(cmd);
         return ResponseResult.success(Collections.singletonMap("userId", userId));
