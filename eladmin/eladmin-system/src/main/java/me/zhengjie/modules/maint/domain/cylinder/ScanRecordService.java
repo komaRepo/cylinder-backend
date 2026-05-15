@@ -56,7 +56,7 @@ public class ScanRecordService extends ServiceImpl<ScanRecordMapper, ScanRecord>
                 page,
                 isAdmin ? null : currentCompanyId, // admin用户传null，不加company_id过滤
                 req.getScanType(),
-                req.getCylinderCode(),
+                req.getQrcode(),
                 req.getUserId(),
                 req.getStartTime(),
                 req.getEndTime()

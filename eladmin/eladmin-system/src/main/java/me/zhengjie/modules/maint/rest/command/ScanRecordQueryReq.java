@@ -16,7 +16,7 @@ public class ScanRecordQueryReq extends PageQueryReq {
     private Integer scanType;
 
     @Schema(description = "气瓶编号(支持模糊匹配)")
-    private String cylinderCode;
+    private String qrcode;
 
     @Schema(description = "扫码用户ID")
     private Long userId;

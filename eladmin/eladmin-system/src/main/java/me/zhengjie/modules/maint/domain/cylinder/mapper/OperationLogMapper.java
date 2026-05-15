@@ -29,6 +29,6 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface OperationLogMapper extends BaseMapper<OperationLog> {
 
-    Page<OperationLog> selectPageByCompany(Page<OperationLog> page, @Param("companyId") Long companyId, @Param("operation") OperationType operation, @Param("targetType") TargetType targetType, @Param("targetId") Long targetId, @Param("ip") String ip, @Param("startTime") java.util.Date startTime, @Param("endTime") java.util.Date endTime);
+    Page<OperationLog> selectPageByCompany(Page<OperationLog> page, @Param("companyId") Long companyId, @Param("operation") OperationType operation, @Param("targetType") TargetType targetType, @Param("targetId") Long targetId, @Param("cylinderCode") String cylinderCode, @Param("ip") String ip, @Param("startTime") java.util.Date startTime, @Param("endTime") java.util.Date endTime);
 
 }

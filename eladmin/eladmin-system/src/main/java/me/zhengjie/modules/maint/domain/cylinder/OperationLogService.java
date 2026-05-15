@@ -65,7 +65,7 @@ public class OperationLogService extends ServiceImpl<OperationLogMapper, Operati
         
         // 执行分页查询
         Page<OperationLog> page = new Page<>(req.getPage(), req.getSize());
-        this.baseMapper.selectPageByCompany(page, isAdmin ? null : currentCompanyId, req.getOperation(), req.getTargetType(), req.getTargetId(), req.getIp(), req.getStartTime(), req.getEndTime());
+        this.baseMapper.selectPageByCompany(page, isAdmin ? null : currentCompanyId, req.getOperation(), req.getTargetType(), req.getTargetId(), req.getQrcode(), req.getIp(), req.getStartTime(), req.getEndTime());
         
         List<OperationLog> records = page.getRecords();
         if (CollUtil.isEmpty(records)) {

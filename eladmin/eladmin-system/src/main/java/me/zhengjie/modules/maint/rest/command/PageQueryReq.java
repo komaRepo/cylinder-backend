@@ -34,4 +34,7 @@ public class PageQueryReq {
     @Max(value = 100, message = "每页条数必须小于或等于100")
     private Integer size = 15;
     
+    @Schema(description = "名称查询", example = "管理员")
+    private String name;
+    
 }

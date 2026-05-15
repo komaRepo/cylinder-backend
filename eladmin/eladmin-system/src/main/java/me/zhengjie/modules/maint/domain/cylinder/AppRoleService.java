@@ -13,6 +13,7 @@
 package me.zhengjie.modules.maint.domain.cylinder;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -121,6 +122,11 @@ public class AppRoleService extends ServiceImpl<AppRoleMapper, AppRole> {
         // 如果companyId不为null，只查询指定公司的角色；如果为null（admin用户），查询所有角色
         if (companyId != null) {
             queryWrapper.eq(AppRole::getCompanyId, companyId);
+        }
+        
+        // 添加角色名称模糊查询
+        if (StrUtil.isNotBlank(req.getName())) {
+            queryWrapper.like(AppRole::getName, req.getName().trim());
         }
         
         queryWrapper.orderByDesc(AppRole::getCreateTime);

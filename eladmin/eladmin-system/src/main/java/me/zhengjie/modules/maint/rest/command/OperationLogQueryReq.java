@@ -23,6 +23,9 @@ public class OperationLogQueryReq extends PageQueryReq {
     @Schema(description = "对象ID")
     private Long targetId;
 
+    @Schema(description = "气瓶二维码（仅当targetType为CYLINDER时生效）")
+    private String qrcode;
+
     @Schema(description = "操作用户ID")
     private Long userId;
 
