@@ -251,7 +251,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.OUTBOUND.getCode());
         
         // 5. 记录业务流转轨迹
-        Long flowId = recordFlow(cylinder.getId(), myCompanyId, dto.getTargetCompanyId(), 2, myUserId,
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, dto.getTargetCompanyId(), FlowType.OUTBOUND.getCode(), myUserId,
                 "出库发往: " + targetCompany.getName() + "。备注: " + (dto.getRemark() != null ? dto.getRemark() : ""));
         
         // ==========================================
@@ -302,7 +302,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.INBOUND.getCode());
         
         // 4. 记录业务流转轨迹
-        Long flowId = recordFlow(cylinder.getId(), cylinder.getCurrentCompanyId(), myCompanyId, 3, myUserId,
+        Long flowId = recordFlow(cylinder.getId(), cylinder.getCurrentCompanyId(), myCompanyId, FlowType.INBOUND.getCode(), myUserId,
                 "扫码入库接收完成。备注: " + (dto.getRemark() != null ? dto.getRemark() : ""));
         
         // ==========================================
@@ -424,7 +424,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // 5. 记录物理扫描流水与生命周期流转 (对接之前的逻辑)
         // ==========================================
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.FILL.getCode());
-        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 4, myUserId,
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, FlowType.INFLATE.getCode(), myUserId,
                 "充装完成。压力: " + dto.getFillPressure() + "，净重: " + dto.getFillWeight() + "kg");
         
         // ==========================================
@@ -823,7 +823,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         // 3. 记录多维流水追踪 (与 fillCylinder 保持同样的高规格架构)
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.INSPECTION.getCode());
-        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 5, myUserId, remark);
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, FlowType.INSPECTION.getCode(), myUserId, remark);
         recordOperationLog(OperationType.INSPECTION, TargetType.CYLINDER, cylinder.getId(), flowId);
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.INSPECT, remark, AccountType.APP);
         
@@ -866,7 +866,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         // 3. 记录流水追踪
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.SCRAP.getCode());
-        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 6, myUserId, remark);
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, FlowType.SCRAP.getCode(), myUserId, remark);
         recordOperationLog(OperationType.SCRAP, TargetType.CYLINDER, cylinder.getId(), flowId);
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.SCRAP, remark, AccountType.APP);
         
@@ -900,7 +900,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         
         // 3. 记录流水追踪
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.REPAIR.getCode());
-        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, 7, myUserId, remark);
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, FlowType.REPPAIR.getCode(), myUserId, remark);
         recordOperationLog(OperationType.REPAIR, TargetType.CYLINDER, cylinder.getId(), flowId);
         recordLifecycle(cylinder.getId(), myCompanyId, LifecycleEventEnum.REPAIR, remark, AccountType.APP);
         

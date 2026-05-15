@@ -25,6 +25,8 @@ public enum FlowType {
     INBOUND(1,"入库"),
     INFLATE(2,"加气"),
     INSPECTION(3,"年检"),
+    SCRAP(4, "报废"),
+    REPPAIR(5, "维修"),
     ;
     
     @EnumValue
