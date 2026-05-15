@@ -227,6 +227,13 @@ public class OperationLogService extends ServiceImpl<OperationLogMapper, Operati
         if (req.getEndTime() != null) {
             wrapper.le(OperationLog::getCreateTime, req.getEndTime());
         }
+        // 添加气瓶二维码查询条件，仅当targetType为CYLINDER时生效
+        if (req.getQrcode() != null && !req.getQrcode().trim().isEmpty() && req.getTargetType() == TargetType.CYLINDER) {
+            Cylinder cylinder = cylinderMapper.selectOne(new LambdaQueryWrapper<Cylinder>().eq(Cylinder::getCode, req.getQrcode().trim()));
+            if (cylinder != null) {
+                wrapper.eq(OperationLog::getTargetId, cylinder.getId());
+            }
+        }
         wrapper.orderByDesc(OperationLog::getCreateTime);
         
         // 执行分页查询
