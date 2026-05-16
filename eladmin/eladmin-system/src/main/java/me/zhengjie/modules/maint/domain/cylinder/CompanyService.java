@@ -70,6 +70,17 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         _checkParam(type, name, creditCode, legalName, legalCode, province, city, district, businessLicense, dangerBusinessLicense, cylinderFillLicense, specialEquipmentLicense);
         
         // 2. 注册企业基础信息
+        // 唯一性校验：企业名称不得重复
+        if (StrUtil.isBlank(name)) {
+            throw new IllegalArgumentException("企业名称不能为空");
+        }
+        QueryWrapper<Company> nameCheck = new QueryWrapper<>();
+        nameCheck.lambda().eq(Company::getName, name.trim());
+        Long exists = this.baseMapper.selectCount(nameCheck);
+        if (exists != null && exists > 0) {
+            throw new BusinessException("企业名称已存在");
+        }
+        
         Company company = new Company();
         company.setName(name);
         company.setCode(code);
@@ -282,9 +293,6 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         // 4. 按创建时间倒序排，新开的网点在前面
         wrapper.orderByDesc(Company::getCreateTime);
         
-        // 5. 只返回绑定了后台账号的企业
-        wrapper.apply("exists (select 1 from sys_user_company where company_id = company.id)");
-        
         // 6. 执行分页查询
         Page<Company> companyPage = this.baseMapper.selectPage(pageObj, wrapper);
         List<Company> companies = companyPage.getRecords();
@@ -364,11 +372,13 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         queryWrapper
                 .lambda()
                 .eq(Company::getStatus, CompanyStatus.INACTIVE);
+        // 只返回已绑定管理端账号的企业
+        queryWrapper.apply("exists (select 1 from sys_user_company where company_id = company.id)");
         List<Company> companies = this.baseMapper.selectList(queryWrapper);
         if (CollUtil.isEmpty(companies)) {
-            return null;
+            return new ArrayList<>();
         }
-        
+
         return CompanyVo.Converter.INSTANCE.fromEntityList(companies);
     }
     

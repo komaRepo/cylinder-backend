@@ -511,8 +511,13 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // ==========================================
         Long myCompanyId = SecurityContext.getCompanyId();
         Boolean isAdmin = SecurityContext.getCurrentUser().getUser().getIsAdmin();
-        Company company = companyMapper.selectById(myCompanyId);
-        boolean isManufacturer = ObjectUtil.equals(company.getTypeManufacturer(), 1);// 是否制造商
+
+        // 只有在非管理员角色下才去查询当前企业信息，以避免 admin 没有绑定公司导致的 NPE
+        boolean isManufacturer = false;
+        if (!isAdmin) {
+            Company company = companyMapper.selectById(myCompanyId);
+            isManufacturer = company != null && ObjectUtil.equals(company.getTypeManufacturer(), 1); // 是否制造商
+        }
         
         LambdaQueryWrapper<Cylinder> wrapper = new LambdaQueryWrapper<>();
         

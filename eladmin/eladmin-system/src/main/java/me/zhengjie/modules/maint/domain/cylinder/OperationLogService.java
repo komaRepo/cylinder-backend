@@ -230,9 +230,11 @@ public class OperationLogService extends ServiceImpl<OperationLogMapper, Operati
         // 添加气瓶二维码查询条件，仅当targetType为CYLINDER时生效
         if (req.getQrcode() != null && !req.getQrcode().trim().isEmpty() && req.getTargetType() == TargetType.CYLINDER) {
             Cylinder cylinder = cylinderMapper.selectOne(new LambdaQueryWrapper<Cylinder>().eq(Cylinder::getCode, req.getQrcode().trim()));
+            Long targetId = null;
             if (cylinder != null) {
-                wrapper.eq(OperationLog::getTargetId, cylinder.getId());
+                targetId = cylinder.getId();
             }
+            wrapper.eq(OperationLog::getTargetId, targetId);
         }
         wrapper.orderByDesc(OperationLog::getCreateTime);
         
