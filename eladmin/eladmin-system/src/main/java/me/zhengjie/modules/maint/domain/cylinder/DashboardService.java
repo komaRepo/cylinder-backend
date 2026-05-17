@@ -68,12 +68,24 @@ public class DashboardService {
     public DashboardDataDto.IndicatorCards getDashboardCards() {
         JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
-        boolean isFiller = Boolean.TRUE.equals(currentUser.getTypeFiller());
+        // currentUser.getTypeFiller() is an Integer flag (0/1), avoid Boolean equals
+        boolean isFiller = currentUser.getTypeFiller() != null && currentUser.getTypeFiller().intValue() == 1;
         
         // 🔒 获取数据权限范围
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        // 非管理员仅允许查看当前账号所属企业的数据（按 companyId 过滤）
+        if (!isAdmin) {
+            if (currentCompanyId == null) return new DashboardDataDto.IndicatorCards();
+            accessibleIds = Collections.singletonList(currentCompanyId);
+        }
         DashboardDataDto.IndicatorCards cards = new DashboardDataDto.IndicatorCards();
         
+        // 如果是非管理员但没有任何可访问的企业，直接返回空卡片（避免无权限下泄露全部数据）
+        if (!isAdmin && CollUtil.isEmpty(accessibleIds)) {
+            return cards; // 全部为默认 0
+        }
+
         // 1. 【通用指标】：状态统计
         QueryWrapper<Cylinder> statusQuery = new QueryWrapper<>();
         statusQuery.select("current_status as currentStatus", "COUNT(id) as id");
@@ -200,6 +212,11 @@ public class DashboardService {
         JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        if (!isAdmin) {
+            if (currentCompanyId == null) return new ArrayList<>();
+            accessibleIds = Collections.singletonList(currentCompanyId);
+        }
         
         QueryWrapper<Cylinder> query = new QueryWrapper<>();
         query.select("current_status as currentStatus", "COUNT(id) as id");
@@ -232,6 +249,11 @@ public class DashboardService {
         JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        if (!isAdmin) {
+            if (currentCompanyId == null) return new ArrayList<>();
+            accessibleIds = Collections.singletonList(currentCompanyId);
+        }
         
         QueryWrapper<CompanyDailyStats> query = new QueryWrapper<>();
         query.select("company_id as companyId", "SUM(fill_count) as fillCount")
@@ -271,6 +293,17 @@ public class DashboardService {
         JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        if (!isAdmin) {
+            if (currentCompanyId == null) {
+                List<DashboardDataDto.EfficiencyDto> list = new ArrayList<>();
+                list.add(new DashboardDataDto.EfficiencyDto("一周内活跃", 0));
+                list.add(new DashboardDataDto.EfficiencyDto("一个月内流转", 0));
+                list.add(new DashboardDataDto.EfficiencyDto("沉睡资产", 0));
+                return list;
+            }
+            accessibleIds = Collections.singletonList(currentCompanyId);
+        }
         
         Date now = new Date();
         Date d7 = DateUtil.offsetDay(now, -7);
@@ -303,6 +336,22 @@ public class DashboardService {
         JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        if (!isAdmin) {
+            if (currentCompanyId == null) {
+                List<DashboardDto.TrendItemDto> emptyTrend = new ArrayList<>();
+                Date today = new Date();
+                for (int i = days - 1; i >= 0; i--) {
+                    DateTime currentDay = DateUtil.offsetDay(today, -i);
+                    DashboardDto.TrendItemDto item = new DashboardDto.TrendItemDto();
+                    item.setDate(DateUtil.format(currentDay, "MM-dd"));
+                    item.setValue(0);
+                    emptyTrend.add(item);
+                }
+                return emptyTrend;
+            }
+            accessibleIds = Collections.singletonList(currentCompanyId);
+        }
         
         Date today = new Date();
         Date startDate = DateUtil.offsetDay(today, -(days - 1));
@@ -375,6 +424,11 @@ public class DashboardService {
         boolean isAdmin = currentUser.getUser().getIsAdmin();
         // 🔒 依然遵循你要求的权限维度：只能看本级和下级
         List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        Long currentCompanyId = SecurityContext.getCompanyId();
+        if (!isAdmin) {
+            if (currentCompanyId == null) return new ArrayList<>();
+            accessibleIds = Collections.singletonList(currentCompanyId);
+        }
         
         // 1. 在气瓶主表中统计各企业“在库”气瓶数量
         QueryWrapper<Cylinder> query = new QueryWrapper<>();
