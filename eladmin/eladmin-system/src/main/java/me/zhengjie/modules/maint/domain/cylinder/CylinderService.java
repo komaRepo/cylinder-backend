@@ -425,8 +425,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // 5. 记录物理扫描流水与生命周期流转 (对接之前的逻辑)
         // ==========================================
         recordScan(cylinder.getId(), myUserId, myCompanyId, ScanType.FILL.getCode());
-        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, FlowType.INFLATE.getCode(), myUserId,
-                "充装完成。压力: " + dto.getFillPressure() + "，净重: " + dto.getFillWeight() + "kg");
+        Long flowId = recordFlow(cylinder.getId(), myCompanyId, myCompanyId, FlowType.INFLATE.getCode(), myUserId, "充装完成: " + dto.getRemark());
         
         // ==========================================
         // 6. 记录系统级防黑客操作日志

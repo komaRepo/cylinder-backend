@@ -18,4 +18,7 @@ public class CylinderFillDto {
     
     @NotNull(message = "充装压力不能为空")
     private Double fillPressure;
+    
+    /** 备注 */
+    private String remark;
 }
