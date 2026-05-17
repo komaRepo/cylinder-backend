@@ -35,6 +35,7 @@ import me.zhengjie.modules.system.mapper.JobMapper;
 import me.zhengjie.modules.system.mapper.RoleDeptMapper;
 import me.zhengjie.modules.system.mapper.RoleMapper;
 import me.zhengjie.modules.system.mapper.RoleMenuMapper;
+import me.zhengjie.modules.system.mapper.MenuMapper;
 import me.zhengjie.modules.system.mapper.UserJobMapper;
 import me.zhengjie.modules.system.mapper.UserMapper;
 import me.zhengjie.modules.system.mapper.UserRoleMapper;
@@ -70,6 +71,7 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
     private final RoleMapper roleMapper;
     private final RoleDeptMapper roleDeptMapper;
     private final RoleMenuMapper roleMenuMapper;
+    private final MenuMapper menuMapper;
     private final UserRoleMapper userRoleMapper;
     private final UserJobMapper userJobMapper;
     private final JobMapper jobMapper;
@@ -147,6 +149,28 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
 
         Dept dept = ensureCompanyDept(company);
         Role role = ensureCompanyAdminRole(company, dept);
+        // 如果该企业是加气站，额外为该企业角色授予仪表盘相关的可视化权限（如果��单存在）
+        try {
+            if (company.getTypeFiller() != null && company.getTypeFiller().intValue() == 1) {
+                Set<Menu> extra = new HashSet<>();
+                // 尝试按菜单标题查找（如果没有这些菜单则忽略）
+                String[] titles = new String[]{"仪表盘", "加气总次数", "当日加气次数", "本月加气次数", "加气趋势", "操作表格"};
+                for (String t : titles) {
+                    try {
+                        Menu m = menuMapper.findByTitle(t);
+                        if (m != null && m.getId() != null) extra.add(m);
+                    } catch (Exception ignored) {
+                        // 忽略查找失败
+                    }
+                }
+                if (!extra.isEmpty()) {
+                    // 直接插入角色-菜单关联（已经在 syncRoleMenus 中插入了当前用户能继承的菜单，这里追加）
+                    roleMenuMapper.insertData(role.getId(), extra);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("为加气站角色追加仪表盘菜单失败：{}", e.getMessage());
+        }
         Job job = ensureCompanyAdminJob();
 
         User user = new User();
@@ -316,7 +340,7 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
     }
 
     private String buildCompanyRoleName(Company company) {
-        return "企业管理员-" + company.getId();
+        return company.getName() + "-企业管理员";
     }
     
 }

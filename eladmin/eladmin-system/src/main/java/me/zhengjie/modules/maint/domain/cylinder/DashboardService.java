@@ -16,6 +16,7 @@ import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
 import me.zhengjie.modules.maint.domain.enums.ScanType;
 import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
+import me.zhengjie.utils.RedisUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,6 +33,7 @@ public class DashboardService {
     private final CylinderMapper cylinderMapper;
     private final ScanRecordMapper scanRecordMapper;
     private final CompanyMapper companyMapper;
+    private final RedisUtils redisUtils;
     
     /**
      * 🚀 【核心修复】：获取当前用户有权限查看的所有企业ID（本级 + 所有下级）
@@ -91,6 +93,7 @@ public class DashboardService {
                         case IN_STOCK: cards.setInStockCount(count); break;
                         case TRANSIT: cards.setFlowingCount(count); break;
                         case WAIT_INSPECT: cards.setBrokenCount(count); break;
+                        case FAULT: cards.setFaultCount(count); break;
                         default: break;
                     }
                 }
@@ -108,13 +111,46 @@ public class DashboardService {
         
         // 3. 【角色专属】：充气商 T+1 加气量融合
         if (isFiller || isAdmin) {
-            Date todayStart = DateUtil.beginOfDay(new Date());
-            QueryWrapper<ScanRecord> todayQuery = new QueryWrapper<>();
-            todayQuery.eq("scan_type", ScanType.FILL.getCode()).ge("scan_time", todayStart);
-            if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-                todayQuery.in("company_id", accessibleIds); // 👈 替换为 IN
+            Date today = new Date();
+            // 优先从 Redis 缓存读取当日充气统计，按公司聚合存放为 hash: DASHBOARD:TODAY_FILL:yyyyMMdd -> {companyId: count}
+            String todayKey = "DASHBOARD:TODAY_FILL:" + DateUtil.format(today, "yyyyMMdd");
+            int todayFill = 0;
+            try {
+                Map<Object, Object> hash = redisUtils.hmget(todayKey);
+                if (hash != null && !hash.isEmpty()) {
+                    if (isAdmin || CollUtil.isEmpty(accessibleIds)) {
+                        for (Object v : hash.values()) {
+                            if (v != null) {
+                                todayFill += Integer.parseInt(String.valueOf(v));
+                            }
+                        }
+                    } else {
+                        for (Long cid : accessibleIds) {
+                            Object v = hash.get(String.valueOf(cid));
+                            if (v == null) v = hash.get(cid);
+                            if (v != null) todayFill += Integer.parseInt(String.valueOf(v));
+                        }
+                    }
+                } else {
+                    // 回退到扫描记录表统计（兼容未启用缓存的场景）
+                    Date todayStart = DateUtil.beginOfDay(today);
+                    QueryWrapper<ScanRecord> todayQuery = new QueryWrapper<>();
+                    todayQuery.eq("scan_type", ScanType.FILL.getCode()).ge("scan_time", todayStart);
+                    if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
+                        todayQuery.in("company_id", accessibleIds);
+                    }
+                    todayFill = Math.toIntExact(scanRecordMapper.selectCount(todayQuery));
+                }
+            } catch (Exception e) {
+                // 容错：Redis 异常时回退到 DB
+                Date todayStart = DateUtil.beginOfDay(today);
+                QueryWrapper<ScanRecord> todayQuery = new QueryWrapper<>();
+                todayQuery.eq("scan_type", ScanType.FILL.getCode()).ge("scan_time", todayStart);
+                if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
+                    todayQuery.in("company_id", accessibleIds);
+                }
+                todayFill = Math.toIntExact(scanRecordMapper.selectCount(todayQuery));
             }
-            int todayFill = Math.toIntExact(scanRecordMapper.selectCount(todayQuery));
             cards.setTodayFillCount(todayFill);
             
             Date monthStart = DateUtil.beginOfMonth(new Date());
@@ -299,7 +335,31 @@ public class DashboardService {
             DashboardDto.TrendItemDto item = new DashboardDto.TrendItemDto();
             item.setDate(dayStr);
             item.setValue(dataMap.getOrDefault(dayStr, 0));
-            
+            // 如果是当天，优先从 Redis 读取实时缓存并覆盖统计表数据
+            if (i == 0) {
+                try {
+                    String key = "DASHBOARD:TODAY_FILL:" + DateUtil.format(today, "yyyyMMdd");
+                    Map<Object, Object> hash = redisUtils.hmget(key);
+                    int todaySum = 0;
+                    if (hash != null && !hash.isEmpty()) {
+                        if (isAdmin || CollUtil.isEmpty(accessibleIds)) {
+                            for (Object v : hash.values()) {
+                                if (v != null) todaySum += Integer.parseInt(String.valueOf(v));
+                            }
+                        } else {
+                            for (Long cid : accessibleIds) {
+                                Object v = hash.get(String.valueOf(cid));
+                                if (v == null) v = hash.get(cid);
+                                if (v != null) todaySum += Integer.parseInt(String.valueOf(v));
+                            }
+                        }
+                    }
+                    if (todaySum > 0) item.setValue(todaySum);
+                } catch (Exception ignored) {
+                    // ignore and keep DB value
+                }
+            }
+
             resultList.add(item);
         }
         return resultList;

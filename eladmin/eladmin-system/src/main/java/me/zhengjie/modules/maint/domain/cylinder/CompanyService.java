@@ -185,11 +185,12 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
                 if (currentCompany == null) {
                     return new ArrayList<>(); // 容错处理：企业被物理删除了则返回空
                 }
-                
-                // 🚀 神级过滤：查自己 + 所有下级！
-                // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
-                // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
-                wrapper.lambda().likeRight(Company::getPath, currentCompany.getPath());
+
+                // 仅查询直接下级：直接下级的 path 以当前 path 为前缀，且逗号数量比当前 path 多 1
+                String currentPath = currentCompany.getPath();
+                int commaCount = currentPath == null ? 0 : (currentPath.length() - currentPath.replace(",", "").length());
+                // 使用原生 SQL 计算 path 中逗号数量等于 commaCount + 1（表示仅一层下级）
+                wrapper.apply("path like '" + currentPath + "%' AND (LENGTH(path)-LENGTH(REPLACE(path,',',''))) = " + (commaCount + 1));
             } else {
                 throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
             }
@@ -254,10 +255,11 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
                     return new PageResult<>(new ArrayList<>(), 0L);
                 }
                 
-                // 🚀 神级过滤：查自己 + 所有下级！
-                // MyBatis-Plus 的 likeRight 会生成 SQL: path LIKE '0,1,5,%'
-                // 注意：千万不要用 like()，like() 会生成 '%0,1,5,%'，导致索引失效全表扫描！
-                wrapper.likeRight(Company::getPath, currentCompany.getPath());
+                // 仅查询直接下级：直接下级的 path 以当前 path 为前缀，且逗号数量比当前 path 多 1
+                String currentPath = currentCompany.getPath();
+                int commaCount = currentPath == null ? 0 : (currentPath.length() - currentPath.replace(",", "").length());
+                // 使用原生 SQL 计算 path 中逗号数量等于 commaCount + 1（表示仅一层下级）
+                wrapper.apply("path like '" + currentPath + "%' AND (LENGTH(path)-LENGTH(REPLACE(path,',',''))) = " + (commaCount + 1));
             } else {
                 throw new BusinessException(ResultCodeEnum.COMPANY_NOT_BIND);
             }

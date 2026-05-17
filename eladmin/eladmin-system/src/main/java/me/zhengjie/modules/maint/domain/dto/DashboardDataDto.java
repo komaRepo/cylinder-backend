@@ -23,6 +23,9 @@ public class DashboardDataDto {
         @Schema(description = "故障/待检气瓶数量 (status=3)")
         private Integer brokenCount = 0;
         
+        @Schema(description = "故障气瓶数量 (status=5)")
+        private Integer faultCount = 0;
+        
         @Schema(description = "即将过期气瓶提醒 (30天内到期)")
         private Integer expiringCount = 0;
 

@@ -62,6 +62,7 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     private final OperationLogMapper operationLogMapper;
     private final AppUserMapper appUserMapper;
     private final UserMapper sysUserMapper;
+    private final me.zhengjie.utils.RedisUtils redisUtils;
     
     
     /**
@@ -444,6 +445,16 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         // 只要充过气，不管是流转还是充装，最后操作的流水ID都要更新上去，大屏查询才能极速响应
         updateObj.setLastFlowId(flowId);
         this.baseMapper.updateById(updateObj);
+        // 同步实时统计到 Redis，供大屏和趋势图读取当日增量（仅针对充气事件）
+        try {
+            Date now = new Date();
+            String key = "DASHBOARD:TODAY_FILL:" + DateUtil.format(now, "yyyyMMdd");
+            redisUtils.hincr(key, String.valueOf(myCompanyId), 1);
+            long seconds = cn.hutool.core.date.DateUtil.between(new Date(), DateUtil.endOfDay(now), cn.hutool.core.date.DateUnit.SECOND);
+            if (seconds > 0) redisUtils.expire(key, seconds);
+        } catch (Exception e) {
+            log.warn("Redis: 更新今日充气统计失败：{}", e.getMessage());
+        }
     }
     
     /**
