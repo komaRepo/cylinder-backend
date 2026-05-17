@@ -226,19 +226,13 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
     public void scanOut(CylinderFlowDto dto) {
         Long myUserId = SecurityContext.getUserId();
         Long myCompanyId = SecurityContext.getCompanyId();
-        
-        // 1. 查出气瓶
-        Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
-                .eq(Cylinder::getCode, dto.getQrcode()));
+        // 1. 查出气瓶并执行统一的前置风控校验（包含产权、报废/待检校验）
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getQrcode(), "出库");
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息，请先进行出厂建档激活！");
         }
-        
-        // 2. 【核心防越权】你只能把你仓库里的气瓶发出去！
-        if (!cylinder.getCurrentCompanyId().equals(myCompanyId)) {
-            throw new BusinessException(403, "非法操作！该气瓶当前不属于您的网点，无法执行出库！");
-        }
-        if (!ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.IN_STOCK)) { // 必须是“在库”状态才能出库
+        // 额外：出库必须为在库状态
+        if (!ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.IN_STOCK)) {
             throw new BusinessException(400, "该气瓶当前不是【在库】状态，无法出库！");
         }
         
@@ -286,6 +280,13 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
                 .eq(Cylinder::getCode, dto.getQrcode()));
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息！");
+        }
+        // 1.1 前置状态校验：报废或待年检均禁止入库（待年检仅允许年检操作）
+        if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.SCRAP)) {
+            throw new BusinessException(400, "操作驳回：该气瓶已处于【彻底报废】状态，禁止入库！");
+        }
+        if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.WAIT_INSPECT)) {
+            throw new BusinessException(400, "操作驳回：该气瓶处于【待年检】状态，仅允许进行年检操作，禁止入库！");
         }
         
         //查询最后一次流转记录,判断当前人员是否
@@ -374,13 +375,12 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
             throw new BusinessException(403, "严重违规：您所在的企业没有【充装资质】，禁止充气！");
         }
         
-        // 2. 查出气瓶物理档案
-        Cylinder cylinder = this.baseMapper.selectOne(new LambdaQueryWrapper<Cylinder>()
-                .eq(Cylinder::getCode, dto.getQrcode()));
+        // 2. 查出气瓶并执行统一的前置风控校验（包含产权、报废/待检校验）
+        Cylinder cylinder = checkAndGetMyCylinder(dto.getQrcode(), "充装");
         if (cylinder == null) {
             throw new BusinessException(404, "未找到该气瓶信息，请核对二维码！");
         }
-        
+
         // 3. 【绝对防线】校验控制权、状态、超期情况 (同上，保持不变)
         // 检查充气间隔：上一次充气时间必须超过5分钟
         if (cylinder.getLastFillTime() != null) {
@@ -802,7 +802,14 @@ public class CylinderService extends ServiceImpl<CylinderMapper, Cylinder> {
         if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.SCRAP)) {
             throw new BusinessException(400, "操作驳回：该气瓶已处于【彻底报废】状态，禁止任何后续操作！");
         }
-        
+        // 4. 待年检状态：只能进行年检操作
+        if (ObjectUtil.equals(cylinder.getCurrentStatus(), CylinderStatus.WAIT_INSPECT)) {
+            // 允许的 actionName 为 年检 或 包含 年检 关键词
+            if (actionName == null || !actionName.contains("年检")) {
+                throw new BusinessException(400, "操作驳回：该气瓶处于【待年检】状态，仅允许进行年检操作！");
+            }
+        }
+
         return cylinder;
     }
     
