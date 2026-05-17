@@ -1,6 +1,7 @@
 package me.zhengjie.modules.maint.domain.cylinder;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -104,8 +105,8 @@ public class DashboardService {
                     switch (stat.getCurrentStatus()) {
                         case IN_STOCK: cards.setInStockCount(count); break;
                         case TRANSIT: cards.setFlowingCount(count); break;
-                        case WAIT_INSPECT: cards.setBrokenCount(count); break;
                         case FAULT: cards.setFaultCount(count); break;
+                        case SCRAP: cards.setBrokenCount(count); break;
                         default: break;
                     }
                 }
@@ -432,8 +433,7 @@ public class DashboardService {
         
         // 1. 在气瓶主表中统计各企业“在库”气瓶数量
         QueryWrapper<Cylinder> query = new QueryWrapper<>();
-        query.select("current_company_id as currentCompanyId", "COUNT(id) as id") // 借用 id 字段接收 count 值
-             .eq("current_status", CylinderStatus.IN_STOCK); // 👈 只统计在库状态
+        query.select("current_company_id as currentCompanyId", "COUNT(id) as id");
         
         if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
             query.in("current_company_id", accessibleIds);
