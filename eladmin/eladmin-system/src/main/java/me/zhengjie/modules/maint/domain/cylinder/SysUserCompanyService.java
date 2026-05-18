@@ -149,28 +149,6 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
 
         Dept dept = ensureCompanyDept(company);
         Role role = ensureCompanyAdminRole(company, dept);
-        // 如果该企业是加气站，额外为该企业角色授予仪表盘相关的可视化权限（如果��单存在）
-        try {
-            if (company.getTypeFiller() != null && company.getTypeFiller().intValue() == 1) {
-                Set<Menu> extra = new HashSet<>();
-                // 尝试按菜单标题查找（如果没有这些菜单则忽略）
-                String[] titles = new String[]{"仪表盘", "加气总次数", "当日加气次数", "本月加气次数", "加气趋势", "操作表格"};
-                for (String t : titles) {
-                    try {
-                        Menu m = menuMapper.findByTitle(t);
-                        if (m != null && m.getId() != null) extra.add(m);
-                    } catch (Exception ignored) {
-                        // 忽略查找失败
-                    }
-                }
-                if (!extra.isEmpty()) {
-                    // 直接插入角色-菜单关联（已经在 syncRoleMenus 中插入了当前用户能继承的菜单，这里追加）
-                    roleMenuMapper.insertData(role.getId(), extra);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("为加气站角色追加仪表盘菜单失败：{}", e.getMessage());
-        }
         Job job = ensureCompanyAdminJob();
 
         User user = new User();
@@ -273,7 +251,7 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
         role.setDescription("企业账号自动创建");
         roleMapper.insert(role);
         syncRoleDept(role.getId(), dept);
-        syncRoleMenus(role.getId());
+        syncRoleMenus(role.getId(), company);
         return role;
     }
 
@@ -282,11 +260,37 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
         roleDeptMapper.insertData(roleId, Collections.singleton(dept));
     }
 
-    private void syncRoleMenus(Long roleId) {
-        Set<Menu> menus = resolveCurrentUserMenus();
+    private void syncRoleMenus(Long roleId, Company company) {
+        // 先把所有的菜单权限都赋予该角色
+        List<Menu> allMenus = menuMapper.selectList(null);
+        Set<Menu> menus = allMenus.stream()
+                .filter(menu -> menu != null && menu.getId() != null)
+                .collect(Collectors.toCollection(HashSet::new));
+
         roleMenuMapper.deleteByRoleId(roleId);
         if (!menus.isEmpty()) {
             roleMenuMapper.insertData(roleId, menus);
+        }
+
+        // 然后删除 menu_id 为 1 的权限
+        roleMenuMapper.deleteByMenuId(1L);
+
+        // 删除 pid 为 1 的所有菜单权限（先查询出 pid=1 的菜单 id 列表）
+        List<Menu> pidOneMenus = menuMapper.findByPidOrderByMenuSort(1L);
+        if (pidOneMenus != null && !pidOneMenus.isEmpty()) {
+            for (Menu m : pidOneMenus) {
+                if (m != null && m.getId() != null) {
+                    roleMenuMapper.deleteByMenuId(m.getId());
+                }
+            }
+        }
+
+        // 如果企业是加气商（typeFiller == 1），再删除 permission 为 "dashboard:map" 的菜单权限
+        if (company != null && company.getTypeFiller() != null && company.getTypeFiller() == 1) {
+            Menu dashboardMap = menuMapper.selectOne(new LambdaQueryWrapper<Menu>().eq(Menu::getPermission, "dashboard:map"));
+            if (dashboardMap != null && dashboardMap.getId() != null) {
+                roleMenuMapper.deleteByMenuId(dashboardMap.getId());
+            }
         }
     }
 
