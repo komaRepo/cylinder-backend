@@ -27,4 +27,9 @@
         delete from sys_roles_menus
         where menu_id = #{menuId}
     </delete>
+
+    <delete id="deleteByRoleIdAndMenuId">
+        delete from sys_roles_menus
+        where role_id = #{roleId} and menu_id = #{menuId}
+    </delete>
 </mapper>

@@ -272,15 +272,15 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
             roleMenuMapper.insertData(roleId, menus);
         }
 
-        // 然后删除 menu_id 为 1 的权限
-        roleMenuMapper.deleteByMenuId(1L);
+        // 然后删除 menu_id 为 1 的权限（仅针对新创建的角色，避免影响其他角色）
+        roleMenuMapper.deleteByRoleIdAndMenuId(roleId, 1L);
 
         // 删除 pid 为 1 的所有菜单权限（先查询出 pid=1 的菜单 id 列表）
         List<Menu> pidOneMenus = menuMapper.findByPidOrderByMenuSort(1L);
         if (pidOneMenus != null && !pidOneMenus.isEmpty()) {
             for (Menu m : pidOneMenus) {
                 if (m != null && m.getId() != null) {
-                    roleMenuMapper.deleteByMenuId(m.getId());
+                    roleMenuMapper.deleteByRoleIdAndMenuId(roleId, m.getId());
                 }
             }
         }
@@ -289,7 +289,7 @@ public class SysUserCompanyService extends ServiceImpl<SysUserCompanyMapper, Sys
         if (company != null && company.getTypeFiller() != null && company.getTypeFiller() == 1) {
             Menu dashboardMap = menuMapper.selectOne(new LambdaQueryWrapper<Menu>().eq(Menu::getPermission, "dashboard:map"));
             if (dashboardMap != null && dashboardMap.getId() != null) {
-                roleMenuMapper.deleteByMenuId(dashboardMap.getId());
+                roleMenuMapper.deleteByRoleIdAndMenuId(roleId, dashboardMap.getId());
             }
         }
     }

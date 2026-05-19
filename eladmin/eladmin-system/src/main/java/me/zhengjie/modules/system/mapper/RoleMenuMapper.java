@@ -33,4 +33,9 @@ public interface RoleMenuMapper {
     void deleteByRoleIds(@Param("roleIds") Set<Long> roleIds);
 
     void deleteByMenuId(@Param("menuId") Long menuId);
+
+    /**
+     * 删除指定角色与指定菜单的关联（仅影响单个 roleId）
+     */
+    void deleteByRoleIdAndMenuId(@Param("roleId") Long roleId, @Param("menuId") Long menuId);
 }
