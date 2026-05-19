@@ -42,5 +42,8 @@ public class DashboardDto {
         
         @Schema(description = "纬度")
         private BigDecimal lat;
+
+        @Schema(description = "是否为当前登录企业")
+        private Boolean isSelf = false;
     }
 }

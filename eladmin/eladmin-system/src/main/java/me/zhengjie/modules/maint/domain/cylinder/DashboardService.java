@@ -73,7 +73,8 @@ public class DashboardService {
         boolean isFiller = currentUser.getTypeFiller() != null && currentUser.getTypeFiller().intValue() == 1;
         
         // 🔒 获取数据权限范围
-        List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        List<Long> accessibleIdList = getAccessibleCompanyIds(currentUser);
+        List<Long> accessibleIds = accessibleIdList;
         Long currentCompanyId = SecurityContext.getCompanyId();
         // 非管理员仅允许查看当前账号所属企业的数据（按 companyId 过滤）
         if (!isAdmin) {
@@ -113,6 +114,23 @@ public class DashboardService {
             }
         }
         cards.setTotalCount(total);
+        // 1.a 计算下级企业气瓶总量（accessibleIds 中去掉本级）
+        int subordinateTotal = 0;
+        try {
+            if (currentCompanyId != null && CollUtil.isNotEmpty(accessibleIdList)) {
+                List<Long> subordinateIds = accessibleIdList.stream()
+                        .filter(id -> !Objects.equals(id, currentCompanyId))
+                        .collect(Collectors.toList());
+                if (CollUtil.isNotEmpty(subordinateIds)) {
+                    QueryWrapper<Cylinder> subQ = new QueryWrapper<>();
+                    subQ.in("current_company_id", subordinateIds);
+                    subordinateTotal = Math.toIntExact(cylinderMapper.selectCount(subQ));
+                }
+            }
+        } catch (Exception ignored) {
+            subordinateTotal = 0;
+        }
+        cards.setSubordinateCylinderCount(subordinateTotal);
         
         // 2. 【临期提醒】
         QueryWrapper<Cylinder> expireQuery = new QueryWrapper<>();
@@ -212,32 +230,57 @@ public class DashboardService {
     public List<DashboardDataDto.StatusPieChart> getStatusPieChart() {
         JwtUserDto currentUser = SecurityContext.getCurrentUser();
         boolean isAdmin = currentUser.getUser().getIsAdmin();
-        List<Long> accessibleIds = getAccessibleCompanyIds(currentUser);
+        List<Long> accessibleIdList = getAccessibleCompanyIds(currentUser);
+        List<Long> accessibleIds = accessibleIdList;
         Long currentCompanyId = SecurityContext.getCompanyId();
         if (!isAdmin) {
             if (currentCompanyId == null) return new ArrayList<>();
             accessibleIds = Collections.singletonList(currentCompanyId);
         }
         
-        QueryWrapper<Cylinder> query = new QueryWrapper<>();
-        query.select("current_status as currentStatus", "COUNT(id) as id");
-        if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-            query.in("current_company_id", accessibleIds); // 👈 替换为 IN
+        // 1. 总量（本级 + 下级）按状态统计
+        QueryWrapper<Cylinder> totalQ = new QueryWrapper<>();
+        totalQ.select("current_status as currentStatus", "COUNT(id) as id");
+        if (!isAdmin && CollUtil.isNotEmpty(accessibleIdList)) {
+            totalQ.in("current_company_id", accessibleIdList);
         }
-        query.groupBy("current_status");
-        
-        List<Cylinder> statusCounts = cylinderMapper.selectList(query);
+        totalQ.groupBy("current_status");
+        List<Cylinder> totalCounts = cylinderMapper.selectList(totalQ);
+
+        // 2. 本级单独统计（用于拆分下级数据）；如果没有当前公司则本级视为0
+        Map<CylinderStatus, Integer> selfMap = new HashMap<>();
+        if (currentCompanyId != null) {
+            QueryWrapper<Cylinder> selfQ = new QueryWrapper<>();
+            selfQ.select("current_status as currentStatus", "COUNT(id) as id");
+            selfQ.eq("current_company_id", currentCompanyId);
+            selfQ.groupBy("current_status");
+            List<Cylinder> selfCounts = cylinderMapper.selectList(selfQ);
+            if (CollUtil.isNotEmpty(selfCounts)) {
+                for (Cylinder c : selfCounts) {
+                    if (c.getCurrentStatus() != null) {
+                        selfMap.put(c.getCurrentStatus(), c.getId() != null ? c.getId().intValue() : 0);
+                    }
+                }
+            }
+        }
+
         List<DashboardDataDto.StatusPieChart> pieList = new ArrayList<>();
-        
-        if (CollUtil.isNotEmpty(statusCounts)) {
-            for (Cylinder stat : statusCounts) {
+        if (CollUtil.isNotEmpty(totalCounts)) {
+            for (Cylinder stat : totalCounts) {
                 if (stat.getCurrentStatus() == null) continue;
+                int total = stat.getId() != null ? stat.getId().intValue() : 0;
+                int self = selfMap.getOrDefault(stat.getCurrentStatus(), 0);
+                int subordinate = Math.max(0, total - self);
+
                 DashboardDataDto.StatusPieChart pie = new DashboardDataDto.StatusPieChart();
-                pie.setValue(stat.getId() != null ? stat.getId().intValue() : 0);
                 pie.setName(stat.getCurrentStatus().getName());
+                pie.setValue(total);
+                pie.setSelfCount(self);
+                pie.setSubordinateCount(subordinate);
                 pieList.add(pie);
             }
         }
+
         return pieList;
     }
     
@@ -428,7 +471,7 @@ public class DashboardService {
         Long currentCompanyId = SecurityContext.getCompanyId();
         if (!isAdmin) {
             if (currentCompanyId == null) return new ArrayList<>();
-            accessibleIds = Collections.singletonList(currentCompanyId);
+            // accessibleIds = Collections.singletonList(currentCompanyId);
         }
         
         // 1. 在气瓶主表中统计各企业“在库”气瓶数量
@@ -485,6 +528,7 @@ public class DashboardService {
                 dto.setValue(stat.getId().intValue()); // 这里的 id 存的是 count(*) 的结果
                 dto.setLng(comp.getLongitude());
                 dto.setLat(comp.getLatitude());
+                dto.setIsSelf(Objects.equals(comp.getId(), currentCompanyId));
                 
                 result.add(dto);
             }

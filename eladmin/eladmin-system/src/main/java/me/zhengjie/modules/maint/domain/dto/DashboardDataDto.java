@@ -45,6 +45,9 @@ public class DashboardDataDto {
         
         @Schema(description = "严重超期未报废告警 (过期1年以上且非报废状态)")
         private Integer criticalOverdueCount = 0;
+        
+        @Schema(description = "下级企业气瓶总量 (不含本级)")
+        private Integer subordinateCylinderCount = 0;
     }
 
     @Data
@@ -54,6 +57,10 @@ public class DashboardDataDto {
         private String name;
         @Schema(description = "数量")
         private Integer value;
+        @Schema(description = "本级气瓶数量 (仅当前企业)")
+        private Integer selfCount = 0;
+        @Schema(description = "下级企业气瓶数量 (可为0)")
+        private Integer subordinateCount = 0;
     }
     
     @Data
