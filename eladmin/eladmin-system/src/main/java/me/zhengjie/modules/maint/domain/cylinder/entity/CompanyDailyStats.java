@@ -27,6 +27,11 @@ import java.util.Date;
 @TableName("company_daily_stats")
 @Schema(description = "企业每日业务汇总表")
 public class CompanyDailyStats {
+    public static final int STAT_TYPE_DAILY = 1;
+    public static final int STAT_TYPE_TOTAL = 2;
+    public static final int STAT_TYPE_MONTH = 3;
+    public static final int STAT_TYPE_TODAY = 4;
+
     @TableId(type = IdType.AUTO)
     @Schema(description = "主键ID")
     private Long id;
@@ -36,6 +41,9 @@ public class CompanyDailyStats {
     
     @Schema(description = "统计日期")
     private Date statDate;
+
+    @Schema(description = "统计类型：1每日，2总计，3当月，4当天")
+    private Integer statType;
     
     @Schema(description = "当日充气总数")
     private Integer fillCount;

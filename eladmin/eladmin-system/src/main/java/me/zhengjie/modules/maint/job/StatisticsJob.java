@@ -29,8 +29,42 @@ public class StatisticsJob {
     private final CylinderDistributionStatsService distributionStatsService;
 
     /**
-     * 任务一：每天凌晨 1:00 执行，统计【昨天】各企业的业务量
-     * Cron 表达式: 0 0 1 * * ? (每天凌晨1点)
+     * 每 10 分钟刷新一次大盘统计快照。
+     * DAILY 行保留给趋势、排行使用；TOTAL/MONTH/TODAY 行供指标卡直接查询。
+     */
+    @Scheduled(cron = "0 0/10 * * * ?")
+    @Transactional(rollbackFor = Exception.class)
+    public void refreshDashboardStats() {
+        log.info("========== 开始刷新 [大盘统计快照] ==========");
+        long startMillis = System.currentTimeMillis();
+
+        Date now = new Date();
+        Date today = DateUtil.beginOfDay(now);
+        Date monthStart = DateUtil.beginOfMonth(now);
+        Date totalDate = DateUtil.parseDate("1970-01-01");
+
+        refreshStats(CompanyDailyStats.STAT_TYPE_DAILY, today, today, now);
+        refreshStats(CompanyDailyStats.STAT_TYPE_TODAY, today, today, now);
+        refreshStats(CompanyDailyStats.STAT_TYPE_MONTH, monthStart, monthStart, now);
+        refreshStats(CompanyDailyStats.STAT_TYPE_TOTAL, totalDate, null, now);
+
+        log.info("========== [大盘统计快照] 刷新完成，耗时: {} ms ==========",
+                System.currentTimeMillis() - startMillis);
+    }
+
+    private void refreshStats(Integer statType, Date statDate, Date startTime, Date endTime) {
+        companyDailyStatsMapper.delete(new LambdaQueryWrapper<CompanyDailyStats>()
+                .eq(CompanyDailyStats::getStatType, statType)
+                .eq(CompanyDailyStats::getStatDate, statDate));
+
+        List<CompanyDailyStats> statsList = companyDailyStatsMapper.aggregateStats(startTime, endTime, statDate, statType);
+        if (!statsList.isEmpty()) {
+            companyDailyStatsService.saveBatch(statsList, 1000);
+        }
+    }
+
+    /**
+     * 任务一：每天凌晨 1:00 执行，补算【昨天】各企业的业务量
      */
     @Scheduled(cron = "0 0 1 * * ?")
     @Transactional(rollbackFor = Exception.class)
@@ -45,6 +79,7 @@ public class StatisticsJob {
 
         // 2. 防重执行：如果因为服务器重启导致重复跑，先把今天算过的数据删掉
         companyDailyStatsMapper.delete(new LambdaQueryWrapper<CompanyDailyStats>()
+                .eq(CompanyDailyStats::getStatType, CompanyDailyStats.STAT_TYPE_DAILY)
                 .eq(CompanyDailyStats::getStatDate, DateUtil.parseDate(DateUtil.formatDate(yesterday))));
 
         // 3. 执行极速 SQL 聚合

@@ -1,7 +1,6 @@
 package me.zhengjie.modules.maint.domain.cylinder;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -14,10 +13,8 @@ import me.zhengjie.modules.maint.domain.dto.DashboardDataDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardDto;
 import me.zhengjie.modules.maint.domain.dto.DashboardQueryDto;
 import me.zhengjie.modules.maint.domain.enums.CylinderStatus;
-import me.zhengjie.modules.maint.domain.enums.ScanType;
 import me.zhengjie.modules.maint.util.SecurityContext;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
-import me.zhengjie.utils.RedisUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,9 +29,7 @@ public class DashboardService {
     private final CylinderDistributionStatsMapper distributionStatsMapper;
     private final RegionLocalService regionLocalService;
     private final CylinderMapper cylinderMapper;
-    private final ScanRecordMapper scanRecordMapper;
     private final CompanyMapper companyMapper;
-    private final RedisUtils redisUtils;
     
     /**
      * 🚀 【核心修复】：获取当前用户有权限查看的所有企业ID（本级 + 所有下级）
@@ -142,63 +137,12 @@ public class DashboardService {
         
         // 3. 【角色专属】：充气商 T+1 加气量融合
         if (isFiller || isAdmin) {
-            Date today = new Date();
-            // 优先从 Redis 缓存读取当日充气统计，按公司聚合存放为 hash: DASHBOARD:TODAY_FILL:yyyyMMdd -> {companyId: count}
-            String todayKey = "DASHBOARD:TODAY_FILL:" + DateUtil.format(today, "yyyyMMdd");
-            int todayFill = 0;
-            try {
-                Map<Object, Object> hash = redisUtils.hmget(todayKey);
-                if (hash != null && !hash.isEmpty()) {
-                    if (isAdmin || CollUtil.isEmpty(accessibleIds)) {
-                        for (Object v : hash.values()) {
-                            if (v != null) {
-                                todayFill += Integer.parseInt(String.valueOf(v));
-                            }
-                        }
-                    } else {
-                        for (Long cid : accessibleIds) {
-                            Object v = hash.get(String.valueOf(cid));
-                            if (v == null) v = hash.get(cid);
-                            if (v != null) todayFill += Integer.parseInt(String.valueOf(v));
-                        }
-                    }
-                } else {
-                    // 回退到扫描记录表统计（兼容未启用缓存的场景）
-                    Date todayStart = DateUtil.beginOfDay(today);
-                    QueryWrapper<ScanRecord> todayQuery = new QueryWrapper<>();
-                    todayQuery.eq("scan_type", ScanType.FILL.getCode()).ge("scan_time", todayStart);
-                    if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-                        todayQuery.in("company_id", accessibleIds);
-                    }
-                    todayFill = Math.toIntExact(scanRecordMapper.selectCount(todayQuery));
-                }
-            } catch (Exception e) {
-                // 容错：Redis 异常时回退到 DB
-                Date todayStart = DateUtil.beginOfDay(today);
-                QueryWrapper<ScanRecord> todayQuery = new QueryWrapper<>();
-                todayQuery.eq("scan_type", ScanType.FILL.getCode()).ge("scan_time", todayStart);
-                if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-                    todayQuery.in("company_id", accessibleIds);
-                }
-                todayFill = Math.toIntExact(scanRecordMapper.selectCount(todayQuery));
-            }
+            int todayFill = sumFillCount(CompanyDailyStats.STAT_TYPE_TODAY, accessibleIds, isAdmin);
+            int monthFill = sumFillCount(CompanyDailyStats.STAT_TYPE_MONTH, accessibleIds, isAdmin);
+            int totalFill = sumFillCount(CompanyDailyStats.STAT_TYPE_TOTAL, accessibleIds, isAdmin);
             cards.setTodayFillCount(todayFill);
-            
-            Date monthStart = DateUtil.beginOfMonth(new Date());
-            QueryWrapper<CompanyDailyStats> offlineQuery = new QueryWrapper<>();
-            offlineQuery.select(
-                    "SUM(fill_count) as fillCount",
-                    "SUM(CASE WHEN stat_date >= '" + DateUtil.formatDate(monthStart) + "' THEN fill_count ELSE 0 END) as inCount"
-            );
-            if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-                offlineQuery.in("company_id", accessibleIds); // 👈 替换为 IN
-            }
-            CompanyDailyStats offlineResult = dailyStatsMapper.selectOne(offlineQuery);
-            int historyFill = offlineResult != null && offlineResult.getFillCount() != null ? offlineResult.getFillCount() : 0;
-            int monthOfflineFill = offlineResult != null && offlineResult.getInCount() != null ? offlineResult.getInCount() : 0;
-            
-            cards.setTotalFillCount(historyFill + todayFill);
-            cards.setMonthFillCount(monthOfflineFill + todayFill);
+            cards.setMonthFillCount(monthFill);
+            cards.setTotalFillCount(totalFill);
         }
         
         // 4. 🚀 【高阶维度】：沉睡资产预警 (超30天未动)
@@ -220,6 +164,17 @@ public class DashboardService {
         cards.setCriticalOverdueCount(Math.toIntExact(cylinderMapper.selectCount(riskQuery)));
         
         return cards;
+    }
+
+    private int sumFillCount(Integer statType, List<Long> accessibleIds, boolean isAdmin) {
+        QueryWrapper<CompanyDailyStats> query = new QueryWrapper<>();
+        query.select("SUM(fill_count) as fillCount")
+             .eq("stat_type", statType);
+        if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
+            query.in("company_id", accessibleIds);
+        }
+        CompanyDailyStats result = dailyStatsMapper.selectOne(query);
+        return result != null && result.getFillCount() != null ? result.getFillCount() : 0;
     }
     
     /**
@@ -301,6 +256,7 @@ public class DashboardService {
         
         QueryWrapper<CompanyDailyStats> query = new QueryWrapper<>();
         query.select("company_id as companyId", "SUM(fill_count) as fillCount")
+             .eq("stat_type", CompanyDailyStats.STAT_TYPE_DAILY)
              .ge("stat_date", DateUtil.beginOfMonth(new Date()))
              .groupBy("company_id")
              .orderByDesc("SUM(fill_count)")
@@ -402,6 +358,7 @@ public class DashboardService {
         
         QueryWrapper<CompanyDailyStats> query = new QueryWrapper<>();
         query.select("stat_date as statDate", "SUM(fill_count) as fillCount")
+             .eq("stat_type", CompanyDailyStats.STAT_TYPE_DAILY)
              .ge("stat_date", DateUtil.beginOfDay(startDate))
              .le("stat_date", DateUtil.endOfDay(today));
         
@@ -428,30 +385,6 @@ public class DashboardService {
             DashboardDto.TrendItemDto item = new DashboardDto.TrendItemDto();
             item.setDate(dayStr);
             item.setValue(dataMap.getOrDefault(dayStr, 0));
-            // 如果是当天，优先从 Redis 读取实时缓存并覆盖统计表数据
-            if (i == 0) {
-                try {
-                    String key = "DASHBOARD:TODAY_FILL:" + DateUtil.format(today, "yyyyMMdd");
-                    Map<Object, Object> hash = redisUtils.hmget(key);
-                    int todaySum = 0;
-                    if (hash != null && !hash.isEmpty()) {
-                        if (isAdmin || CollUtil.isEmpty(accessibleIds)) {
-                            for (Object v : hash.values()) {
-                                if (v != null) todaySum += Integer.parseInt(String.valueOf(v));
-                            }
-                        } else {
-                            for (Long cid : accessibleIds) {
-                                Object v = hash.get(String.valueOf(cid));
-                                if (v == null) v = hash.get(cid);
-                                if (v != null) todaySum += Integer.parseInt(String.valueOf(v));
-                            }
-                        }
-                    }
-                    if (todaySum > 0) item.setValue(todaySum);
-                } catch (Exception ignored) {
-                    // ignore and keep DB value
-                }
-            }
 
             resultList.add(item);
         }
