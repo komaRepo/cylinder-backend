@@ -10,7 +10,6 @@ import me.zhengjie.modules.maint.domain.cylinder.entity.CompanyDailyStats;
 import me.zhengjie.modules.maint.domain.cylinder.entity.CylinderDistributionStats;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.CompanyDailyStatsMapper;
 import me.zhengjie.modules.maint.domain.cylinder.mapper.CylinderDistributionStatsMapper;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +20,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class StatisticsJob {
+    private static final Date TOTAL_STAT_DATE = DateUtil.parseDate("1970-01-01");
 
     private final CompanyDailyStatsMapper companyDailyStatsMapper;
     private final CompanyDailyStatsService companyDailyStatsService;
@@ -30,9 +30,8 @@ public class StatisticsJob {
 
     /**
      * 每 10 分钟刷新一次大盘统计快照。
-     * DAILY 行保留给趋势、排行使用；TOTAL/MONTH/TODAY 行供指标卡直接查询。
+     * 只维护指标卡需要的 TOTAL/MONTH/TODAY 三类快照。
      */
-    @Scheduled(cron = "0 0/10 * * * ?")
     @Transactional(rollbackFor = Exception.class)
     public void refreshDashboardStats() {
         log.info("========== 开始刷新 [大盘统计快照] ==========");
@@ -41,12 +40,10 @@ public class StatisticsJob {
         Date now = new Date();
         Date today = DateUtil.beginOfDay(now);
         Date monthStart = DateUtil.beginOfMonth(now);
-        Date totalDate = DateUtil.parseDate("1970-01-01");
 
-        refreshStats(CompanyDailyStats.STAT_TYPE_DAILY, today, today, now);
         refreshStats(CompanyDailyStats.STAT_TYPE_TODAY, today, today, now);
         refreshStats(CompanyDailyStats.STAT_TYPE_MONTH, monthStart, monthStart, now);
-        refreshStats(CompanyDailyStats.STAT_TYPE_TOTAL, totalDate, null, now);
+        refreshStats(CompanyDailyStats.STAT_TYPE_TOTAL, TOTAL_STAT_DATE, null, now);
 
         log.info("========== [大盘统计快照] 刷新完成，耗时: {} ms ==========",
                 System.currentTimeMillis() - startMillis);
@@ -64,41 +61,9 @@ public class StatisticsJob {
     }
 
     /**
-     * 任务一：每天凌晨 1:00 执行，补算【昨天】各企业的业务量
-     */
-    @Scheduled(cron = "0 0 1 * * ?")
-    @Transactional(rollbackFor = Exception.class)
-    public void generateDailyStats() {
-        log.info("========== 开始执行 [企业每日业务统计] 定时任务 ==========");
-        long startMillis = System.currentTimeMillis();
-
-        // 1. 确定时间窗口：昨天的 00:00:00 到 23:59:59
-        Date yesterday = DateUtil.yesterday();
-        Date startTime = DateUtil.beginOfDay(yesterday);
-        Date endTime = DateUtil.endOfDay(yesterday);
-
-        // 2. 防重执行：如果因为服务器重启导致重复跑，先把今天算过的数据删掉
-        companyDailyStatsMapper.delete(new LambdaQueryWrapper<CompanyDailyStats>()
-                .eq(CompanyDailyStats::getStatType, CompanyDailyStats.STAT_TYPE_DAILY)
-                .eq(CompanyDailyStats::getStatDate, DateUtil.parseDate(DateUtil.formatDate(yesterday))));
-
-        // 3. 执行极速 SQL 聚合
-        List<CompanyDailyStats> statsList = companyDailyStatsMapper.aggregateDailyStats(startTime, endTime, yesterday);
-
-        // 4. 批量落库
-        if (!statsList.isEmpty()) {
-            companyDailyStatsService.saveBatch(statsList, 1000);
-        }
-
-        log.info("========== [企业每日业务统计] 完成，耗时: {} ms，共生成 {} 条记录 ==========", 
-                (System.currentTimeMillis() - startMillis), statsList.size());
-    }
-
-    /**
      * 任务二：每天凌晨 2:00 执行，生成【全国气瓶分布大盘快照】
      * Cron 表达式: 0 0 2 * * ? (每天凌晨2点)
      */
-    @Scheduled(cron = "0 0 2 * * ?")
     @Transactional(rollbackFor = Exception.class)
     public void generateDistributionSnapshot() {
         log.info("========== 开始执行 [全国气瓶分布快照] 定时任务 ==========");

@@ -30,10 +30,6 @@ import java.util.List;
 public interface CompanyDailyStatsMapper extends BaseMapper<CompanyDailyStats> {
     
 
-    List<CompanyDailyStats> aggregateDailyStats(@Param("startTime") Date startTime,
-                                                @Param("endTime") Date endTime,
-                                                @Param("statDate") Date statDate);
-
     List<CompanyDailyStats> aggregateStats(@Param("startTime") Date startTime,
                                            @Param("endTime") Date endTime,
                                            @Param("statDate") Date statDate,

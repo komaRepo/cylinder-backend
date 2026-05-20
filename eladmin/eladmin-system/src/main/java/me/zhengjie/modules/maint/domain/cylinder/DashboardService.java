@@ -255,11 +255,9 @@ public class DashboardService {
         }
         
         QueryWrapper<CompanyDailyStats> query = new QueryWrapper<>();
-        query.select("company_id as companyId", "SUM(fill_count) as fillCount")
-             .eq("stat_type", CompanyDailyStats.STAT_TYPE_DAILY)
-             .ge("stat_date", DateUtil.beginOfMonth(new Date()))
-             .groupBy("company_id")
-             .orderByDesc("SUM(fill_count)")
+        query.select("company_id as companyId", "fill_count as fillCount")
+             .eq("stat_type", CompanyDailyStats.STAT_TYPE_MONTH)
+             .orderByDesc("fill_count")
              .last("LIMIT 5");
         
         if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
@@ -360,7 +358,7 @@ public class DashboardService {
         query.select("stat_date as statDate", "SUM(fill_count) as fillCount")
              .eq("stat_type", CompanyDailyStats.STAT_TYPE_DAILY)
              .ge("stat_date", DateUtil.beginOfDay(startDate))
-             .le("stat_date", DateUtil.endOfDay(today));
+             .lt("stat_date", DateUtil.beginOfDay(today));
         
         if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
             query.in("company_id", accessibleIds); // 👈 替换为 IN
@@ -384,7 +382,11 @@ public class DashboardService {
             
             DashboardDto.TrendItemDto item = new DashboardDto.TrendItemDto();
             item.setDate(dayStr);
-            item.setValue(dataMap.getOrDefault(dayStr, 0));
+            if (i == 0) {
+                item.setValue(sumFillCount(CompanyDailyStats.STAT_TYPE_TODAY, accessibleIds, isAdmin));
+            } else {
+                item.setValue(dataMap.getOrDefault(dayStr, 0));
+            }
 
             resultList.add(item);
         }

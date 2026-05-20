@@ -249,13 +249,14 @@ CREATE TABLE `company_daily_stats`
     `id`               bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `company_id`       bigint NOT NULL COMMENT '企业ID',
     `stat_date`        date   NOT NULL COMMENT '统计日期',
+    `stat_type`        tinyint NOT NULL DEFAULT '1' COMMENT '统计类型：1每日，2总计，3当月，4当天',
     `fill_count`       int      DEFAULT '0' COMMENT '当日充气总数',
     `inspection_count` int      DEFAULT '0' COMMENT '当日年检总数',
     `in_count`         int      DEFAULT '0' COMMENT '当日入库总数',
     `out_count`        int      DEFAULT '0' COMMENT '当日出库总数',
     `update_time`      datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_company_date` (`company_id`, `stat_date`),
+    UNIQUE KEY `uk_company_type_date` (`company_id`, `stat_type`, `stat_date`),
     KEY `idx_stat_date_company` (`stat_date`, `company_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
