@@ -8,19 +8,50 @@
             c.id AS companyId,
             #{statDate} AS statDate,
             #{statType} AS statType,
-            COALESCE(SUM(CASE WHEN sr.scan_type = 4 THEN 1 ELSE 0 END), 0) AS fillCount,
-            COALESCE(SUM(CASE WHEN sr.scan_type = 5 THEN 1 ELSE 0 END), 0) AS inspectionCount,
-            COALESCE(SUM(CASE WHEN sr.scan_type = 3 THEN 1 ELSE 0 END), 0) AS inCount,
-            COALESCE(SUM(CASE WHEN sr.scan_type = 2 THEN 1 ELSE 0 END), 0) AS outCount
+            COALESCE(SUM(CASE WHEN stat.operation IN ('2', 'INFLATE') THEN 1 ELSE 0 END), 0) AS fillCount,
+            COALESCE(SUM(CASE WHEN stat.operation IN ('3', 'INSPECTION') THEN 1 ELSE 0 END), 0) AS inspectionCount,
+            COALESCE(SUM(CASE WHEN stat.operation IN ('1', 'IN') THEN 1 ELSE 0 END), 0) AS inCount,
+            COALESCE(SUM(CASE WHEN stat.operation IN ('0', 'OUT') THEN 1 ELSE 0 END), 0) AS outCount
         FROM company c
-        LEFT JOIN scan_record sr ON sr.company_id = c.id
+        LEFT JOIN (
+            SELECT
+                CASE
+                    WHEN ol.operation IN ('0', 'OUT') THEN cf.from_company_id
+                    WHEN ol.operation IN ('1', 'IN') THEN cf.to_company_id
+                    WHEN ol.operation IN ('2', 'INFLATE', '3', 'INSPECTION', '5', 'REPAIR', '6', 'SCRAP') THEN cf.to_company_id
+                    ELSE NULL
+                END AS company_id,
+                ol.operation
+            FROM operation_log ol
+            LEFT JOIN cylinder_flow cf ON cf.id = ol.flow_id
+            WHERE ol.operation IN ('0', 'OUT', '1', 'IN', '2', 'INFLATE', '3', 'INSPECTION', '5', 'REPAIR', '6', 'SCRAP')
             <if test="startTime != null">
-                AND sr.scan_time &gt;= #{startTime}
+                AND ol.create_time &gt;= #{startTime}
             </if>
             <if test="endTime != null">
-                AND sr.scan_time &lt; #{endTime}
+                AND ol.create_time &lt; #{endTime}
             </if>
+        ) stat ON stat.company_id = c.id
         GROUP BY c.id
+    </select>
+
+    <select id="aggregateFillTrend" resultType="me.zhengjie.modules.maint.domain.cylinder.entity.CompanyDailyStats">
+        SELECT
+            DATE(ol.create_time) AS statDate,
+            COUNT(1) AS fillCount
+        FROM operation_log ol
+        INNER JOIN cylinder_flow cf ON cf.id = ol.flow_id
+        WHERE ol.operation IN ('2', 'INFLATE')
+          AND ol.create_time &gt;= #{startTime}
+          AND ol.create_time &lt; #{endTime}
+        <if test="companyIds != null and companyIds.size() > 0">
+          AND cf.to_company_id IN
+          <foreach collection="companyIds" item="companyId" open="(" separator="," close=")">
+              #{companyId}
+          </foreach>
+        </if>
+        GROUP BY DATE(ol.create_time)
+        ORDER BY DATE(ol.create_time)
     </select>
 
 </mapper>

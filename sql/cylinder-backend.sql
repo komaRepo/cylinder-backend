@@ -693,12 +693,14 @@ CREATE TABLE `operation_log`
     `operation`   varchar(200) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '操作名称',
     `target_type` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '操作对象类型',
     `target_id`   bigint                                  DEFAULT NULL COMMENT '对象ID',
+    `flow_id`     bigint                                  DEFAULT NULL COMMENT '流转记录ID',
     `ip`          varchar(50) COLLATE utf8mb4_general_ci  DEFAULT NULL COMMENT 'IP地址',
     `longitude`   decimal(10, 7)                          DEFAULT NULL COMMENT '经度',
     `latitude`    decimal(10, 7)                          DEFAULT NULL COMMENT '纬度',
     `create_time` datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
     PRIMARY KEY (`id`, `create_time`),
-    KEY `idx_user_time` (`user_id`, `create_time`)
+    KEY `idx_user_time` (`user_id`, `create_time`),
+    KEY `idx_operation_time_flow` (`operation`, `create_time`, `flow_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='操作日志'

@@ -353,19 +353,12 @@ public class DashboardService {
         
         Date today = new Date();
         Date startDate = DateUtil.offsetDay(today, -(days - 1));
-        
-        QueryWrapper<CompanyDailyStats> query = new QueryWrapper<>();
-        query.select("stat_date as statDate", "SUM(fill_count) as fillCount")
-             .eq("stat_type", CompanyDailyStats.STAT_TYPE_DAILY)
-             .ge("stat_date", DateUtil.beginOfDay(startDate))
-             .lt("stat_date", DateUtil.beginOfDay(today));
-        
-        if (!isAdmin && CollUtil.isNotEmpty(accessibleIds)) {
-            query.in("company_id", accessibleIds); // 👈 替换为 IN
-        }
-        query.groupBy("stat_date").orderByAsc("stat_date");
-        
-        List<CompanyDailyStats> dbStats = dailyStatsMapper.selectList(query);
+        List<Long> trendCompanyIds = isAdmin ? null : accessibleIds;
+        List<CompanyDailyStats> dbStats = dailyStatsMapper.aggregateFillTrend(
+                DateUtil.beginOfDay(startDate),
+                DateUtil.endOfDay(today),
+                trendCompanyIds
+        );
         Map<String, Integer> dataMap = new HashMap<>();
         if (CollUtil.isNotEmpty(dbStats)) {
             dataMap = dbStats.stream().collect(Collectors.toMap(
@@ -382,11 +375,7 @@ public class DashboardService {
             
             DashboardDto.TrendItemDto item = new DashboardDto.TrendItemDto();
             item.setDate(dayStr);
-            if (i == 0) {
-                item.setValue(sumFillCount(CompanyDailyStats.STAT_TYPE_TODAY, accessibleIds, isAdmin));
-            } else {
-                item.setValue(dataMap.getOrDefault(dayStr, 0));
-            }
+            item.setValue(dataMap.getOrDefault(dayStr, 0));
 
             resultList.add(item);
         }

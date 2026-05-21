@@ -35,4 +35,8 @@ public interface CompanyDailyStatsMapper extends BaseMapper<CompanyDailyStats> {
                                            @Param("statDate") Date statDate,
                                            @Param("statType") Integer statType);
 
+    List<CompanyDailyStats> aggregateFillTrend(@Param("startTime") Date startTime,
+                                               @Param("endTime") Date endTime,
+                                               @Param("companyIds") List<Long> companyIds);
+
 }
