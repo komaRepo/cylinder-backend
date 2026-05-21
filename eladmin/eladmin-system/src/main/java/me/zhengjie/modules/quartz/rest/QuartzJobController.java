@@ -90,7 +90,7 @@ public class QuartzJobController {
             throw new BadRequestException("A new "+ ENTITY_NAME +" cannot already have an ID");
         }
         // 验证Bean是不是合法的，合法的定时任务 Bean 需要用 @Service 定义
-        checkBean(resources.getBeanName());
+        // checkBean(resources.getBeanName());
         quartzJobService.create(resources);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
@@ -101,7 +101,7 @@ public class QuartzJobController {
     @PreAuthorize("@el.check('timing:edit')")
     public ResponseEntity<Object> updateQuartzJob(@Validated(QuartzJob.Update.class) @RequestBody QuartzJob resources){
         // 验证Bean是不是合法的，合法的定时任务 Bean 需要用 @Service 定义
-        checkBean(resources.getBeanName());
+        // checkBean(resources.getBeanName());
         quartzJobService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
