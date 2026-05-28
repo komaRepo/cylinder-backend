@@ -61,7 +61,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
      */
     @Transactional(rollbackFor = Exception.class)
     public void register(CompanyType type, String name, String creditCode, String code, String legalName,
-                         String legalCode, String contactName, String contactPhone, String countryCode, String province,
+                         String legalCode, String contactName, String contactPhone, String email, String countryCode, String province,
                          String city, String district, String address, Long parentId, String businessLicense,
                          String dangerBusinessLicense, String cylinderFillLicense, String specialEquipmentLicense,
                          BigDecimal longitude, BigDecimal latitude) {
@@ -89,6 +89,7 @@ public class CompanyService extends ServiceImpl<CompanyMapper, Company> {
         company.setLegalCode(legalCode);
         company.setContact(contactName);
         company.setPhone(contactPhone);
+        company.setEmail(email);
         company.setCountryCode(countryCode);
         company.setProvince(province);
         company.setCity(city);
