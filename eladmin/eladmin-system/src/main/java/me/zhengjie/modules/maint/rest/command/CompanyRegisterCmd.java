@@ -99,4 +99,7 @@ public class CompanyRegisterCmd {
     /** 特种设备使用许可证(加气站必填) */
     private String specialEquipmentLicense;
     
+    /** 联系人邮箱 */
+    private String email;
+    
 }

@@ -76,6 +76,9 @@ public class Company {
     @Schema(description = "联系电话")
     private String phone;
     
+    @Schema(description = "联系邮箱")
+    private String email;
+    
     @Schema(description = "状态 0禁用 1正常")
     private CompanyStatus status;
     

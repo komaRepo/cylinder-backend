@@ -12,14 +12,13 @@
  */
 package me.zhengjie.modules.maint.rest.backend;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.rest.AnonymousAccess;
 import me.zhengjie.modules.maint.domain.cylinder.CompanyService;
-import me.zhengjie.modules.maint.domain.cylinder.entity.Company;
+// ...existing code...
 import me.zhengjie.modules.maint.domain.dto.CompanyWithAccountsDto;
 import me.zhengjie.modules.maint.rest.command.CompanyRegisterCmd;
 import me.zhengjie.modules.maint.rest.command.QueryCompanyListReq;
@@ -66,6 +65,7 @@ public class CompanyController {
                 cmd.getLegalCode(),
                 cmd.getContactName(),
                 cmd.getContactPhone(),
+                cmd.getEmail(),
                 cmd.getCountryCode(),
                 cmd.getProvince(),
                 cmd.getCity(),
